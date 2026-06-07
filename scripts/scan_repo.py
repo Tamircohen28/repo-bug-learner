@@ -234,7 +234,7 @@ def discover_rules(rules_dir: Path, rationale_roots: list[Path], github_org: str
 # File enumeration
 # ---------------------------------------------------------------------------
 
-# iter-25: extended to catch Wix's `*-test-kit/src/main/` convention. These
+# iter-25: extended to catch `*-test-kit/src/main/` convention. These
 # directories live on the main source root (not under /test/) but exist to
 # support tests in OTHER modules — should not be production-flagged.
 TEST_PATH_RE = re.compile(
@@ -431,14 +431,14 @@ WSRE_STATUS_RE = re.compile(
 
 
 # iter-2: skip when responseStatus is `Internal` ANYWHERE in the class definition or its
-# companion object, and skip when class name ends in `SystemException` (Wix convention).
+# companion object, and skip when class name ends in `SystemException` (system-error convention).
 WSRE_INTERNAL_RE = re.compile(r"ResponseStatus\.Internal\b")
 WSRE_PARAM_STATUS_RE = re.compile(
     r"\b(?:override\s+(?:val|var)\s+)?responseStatus\s*:\s*ResponseStatus\b"
 )
 
 
-def scan_wix_status_runtime_business(path: Path, text: str) -> list[tuple[int, str, str]]:
+def scan_status_runtime_business_error(path: Path, text: str) -> list[tuple[int, str, str]]:
     hits: list[tuple[int, str, str]] = []
     for m in WSRE_CLASS_RE.finditer(text):
         cls_name = m.group(1)
@@ -456,7 +456,7 @@ def scan_wix_status_runtime_business(path: Path, text: str) -> list[tuple[int, s
         # iter-2/3: if responseStatus is declared as a class parameter (with or
         # without override val), the caller decides — without call-site analysis
         # we cannot judge. Search the WHOLE scope (class header + body), not just
-        # the WixStatusRuntimeException super-call args.
+        # the StatusRuntimeException super-call args.
         if WSRE_PARAM_STATUS_RE.search(scope):
             continue
         status = WSRE_STATUS_RE.search(ctor_args)
@@ -471,7 +471,7 @@ def scan_wix_status_runtime_business(path: Path, text: str) -> list[tuple[int, s
         msg = (
             f"Class `{cls_name}` extends StatusRuntimeException with non-Internal "
             f"responseStatus `{biz}`. Business errors should extend "
-            f"WixApplicationRuntimeException with an applicationDetails code instead."
+            f"a domain-specific ApplicationException with an applicationDetails code instead."
         )
         hits.append((line, snippet, msg))
     return hits
@@ -866,9 +866,9 @@ def run_semgrep_yaml(
 # mentions appDefId/applicationDefinitionId/appId, either as a named arg or
 # a positional reference to such a name.
 # iter-20: removed `staffMembersAdapter` from this list. Adapters are the scoping
-# boundary in Wix — they internally use `serverSigner.withAdapterIdentity` which
-# encodes app-def-id via the signed CallScope. Calls to `staffMembersAdapter.X()`
-# from callers are scoped automatically. Only the raw platformized SERVICE
+# boundary — they use `serverSigner.withAdapterIdentity` which encodes app-def-id
+# via the signed CallScope. Calls to `staffMembersAdapter.X()` from callers are
+# scoped automatically. Only the raw platformized SERVICE
 # clients (and direct repository receivers) genuinely need explicit appDefId.
 # iter-39: expanded staff receiver names
 STAFF_RECV_RE = re.compile(
@@ -1148,7 +1148,7 @@ def scan_try_option_unwrapped_access(path: Path, text: str) -> list[tuple[int, s
 
 SPECIALIZED_EMULATORS = {
     "MissingWithAdapterIdentity": scan_missing_with_adapter_identity,
-    "StatusRuntimeExceptionForBusinessError": scan_wix_status_runtime_business,
+    "StatusRuntimeExceptionForBusinessError": scan_status_runtime_business_error,
     "UnclampedOpenSpots": scan_unclamped_open_spots,
     "MissingDollarInInterpolation": scan_missing_dollar_interpolation,
     "BrokenInterpolationFieldAccess": scan_broken_interpolation_field_access_v2,

@@ -2,7 +2,7 @@
 
 Two backends:
   - Voyage (Anthropic's recommended embedding model for Claude apps). Requires a
-    Voyage API key, may not be Wix-enterprise approved.
+    Voyage API key; check your provider's approval policy before using.
   - Local sentence-transformers (all-MiniLM-L6-v2 or microsoft/codebert-base). Self-
     hosted, no external calls. Default fallback.
 
