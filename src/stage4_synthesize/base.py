@@ -14,7 +14,6 @@ from __future__ import annotations
 import asyncio
 import re
 from dataclasses import dataclass
-from typing import Any
 
 from anthropic import APIConnectionError, APITimeoutError, AsyncAnthropic
 from rich.console import Console
