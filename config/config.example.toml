@@ -1,0 +1,58 @@
+# Copy to config.toml and fill in. Do not commit config.toml.
+
+[jira]
+url = "https://your-jira.example.com"
+project_key = "PROJ"
+ticket_pattern = "[A-Z]+-\\d+"
+# Auth via env vars: JIRA_USER, JIRA_TOKEN
+jql_template = 'project = {project} AND issuetype = Bug AND status in (Done, Closed, Resolved) AND resolved >= "{since}" ORDER BY resolved DESC'
+max_bugs = 500
+
+[github]
+base_url = "https://api.github.com"
+# Auth via env var: GITHUB_TOKEN (needs repo:read + pull_request:read)
+org = "your-org"
+# Repos to mine. Each entry is "repo_name:default_branch"
+repos = [
+    "backend:main",
+    "frontend:main",
+    "api:main",
+]
+
+[claude]
+base_url = "https://api.anthropic.com/v1"
+# Auth via env var: ANTHROPIC_API_KEY
+model_strong = "claude-opus-4-7"
+model_fast = "claude-haiku-4-5"
+embedding_model = "voyage-code-3"
+max_concurrent_calls = 4
+
+[postgres]
+host = "localhost"
+port = 5432
+database = "rbl"
+user = "rbl"
+password = "rbl"
+
+[clustering]
+min_cluster_size = 3
+embedding_dim = 1536
+similarity_threshold = 0.75
+
+[synthesis]
+max_rules_per_run = 30
+require_human_review = true
+include_origin_bugs_metadata = true
+project_context = "A multi-service codebase with Scala backends, TypeScript frontends, Python workers, and Go utilities."
+rules_owner = "platform"
+
+[validation]
+min_precision = 0.85
+min_recall_in_cluster = 0.50
+max_false_positive_rate_on_clean = 0.02
+
+[rules_repos]
+scalafix_repo = "your-org/static-analysis-scalafix"
+opengrep_repo = "your-org/static-analysis-opengrep"
+branch_prefix = "auto-rule"
+review_team = "your-org/platform"

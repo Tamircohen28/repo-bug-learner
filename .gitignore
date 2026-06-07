@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.venv/
+venv/
+
+# Local config and pipeline output
+config/config.toml
+out/
+
+# IDE / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Scala / sbt
+rule-validator/.bsp/
+rule-validator/target/
+rule-validator/project/target/
+.semgrep/
+rules-repo-templates/**/target/
+
+# Repos cloned for mining
+repos/

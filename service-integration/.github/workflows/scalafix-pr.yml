@@ -1,0 +1,202 @@
+name: Scalafix PR Check (Diff-Aware)
+
+# Runs the repo-bug-learner Scalafix rule set on every PR, but only fails
+# the build if a rule fires INSIDE lines that were actually changed in the PR.
+# This prevents pre-existing latent issues from blocking unrelated PRs.
+
+on:
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  scalafix:
+    name: Scalafix (changed lines only)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: sbt
+
+      - name: Setup sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Collect changed Scala files
+        id: changed
+        run: |
+          set -euo pipefail
+          BASE="origin/${{ github.base_ref }}"
+          git fetch origin "${{ github.base_ref }}" --depth=0 || true
+          CHANGED=$(git diff --name-only "$BASE"...HEAD -- '*.scala' || true)
+          {
+            echo "files<<EOF"
+            echo "$CHANGED"
+            echo "EOF"
+            if [ -z "$CHANGED" ]; then
+              echo "skip=true"
+            else
+              echo "skip=false"
+            fi
+          } >> "$GITHUB_OUTPUT"
+          if [ -z "$CHANGED" ]; then
+            echo "No Scala files changed; skipping scalafix."
+          fi
+
+      - name: Pull rules artifact
+        if: steps.changed.outputs.skip == 'false'
+        env:
+          RULES_REPO: ${{ secrets.RULES_REPO }}
+          RULES_TOKEN: ${{ secrets.RULES_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          REPO="${RULES_REPO:?Set RULES_REPO to org/static-analysis-rules}"
+          TMP=$(mktemp -d)
+          if [ -n "${RULES_TOKEN:-}" ]; then
+            git clone --depth=1 "https://x-access-token:${RULES_TOKEN}@github.com/${REPO}.git" "$TMP/rules"
+          else
+            git clone --depth=1 "https://github.com/${REPO}.git" "$TMP/rules"
+          fi
+          mkdir -p project/scalafix-rules
+          cp -r "$TMP/rules/rules/." project/scalafix-rules/
+          echo "Installed rules:"
+          ls project/scalafix-rules/
+
+      - name: Compute changed-line ranges
+        if: steps.changed.outputs.skip == 'false'
+        run: |
+          set -euo pipefail
+          BASE="origin/${{ github.base_ref }}"
+          cat > /tmp/parse_diff.py <<'PY'
+          import sys, json, re
+          data = {}
+          current = None
+          for line in sys.stdin:
+              if line.startswith("+++ b/"):
+                  current = line[6:].rstrip()
+                  data.setdefault(current, [])
+              elif line.startswith("@@") and current is not None:
+                  m = re.search(r"\+(\d+)(?:,(\d+))?", line)
+                  if m:
+                      start = int(m.group(1))
+                      count = int(m.group(2)) if m.group(2) else 1
+                      if count == 0:
+                          continue
+                      data[current].append([start, start + count - 1])
+          print(json.dumps(data))
+          PY
+          git diff --unified=0 "$BASE"...HEAD -- '*.scala' | python3 /tmp/parse_diff.py > changed-lines.json
+          echo "Changed line map:"
+          cat changed-lines.json
+
+      - name: Run scalafix
+        if: steps.changed.outputs.skip == 'false'
+        id: scalafix
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          sbt "scalafixAll --check --rules file:project/scalafix-rules" 2>&1 | tee scalafix-report.txt
+
+      - name: Intersect findings with changed lines
+        if: steps.changed.outputs.skip == 'false'
+        id: intersect
+        run: |
+          set -euo pipefail
+          cat > /tmp/intersect.py <<'PY'
+          import json, os, re, sys
+
+          with open("changed-lines.json") as f:
+              changed = json.load(f)
+
+          def norm(p):
+              cwd = os.getcwd() + "/"
+              if p.startswith(cwd):
+                  p = p[len(cwd):]
+              return p
+
+          hits = []
+          pat = re.compile(r"^\[?(?P<sev>error|warning|info)\]?\s*(?P<file>[^:\s][^:]*\.scala):(?P<line>\d+):(?P<col>\d+):\s*(?P<rest>.*)$")
+          pat2 = re.compile(r"^(?P<file>[^:\s][^:]*\.scala):(?P<line>\d+):(?P<col>\d+):\s*(?P<sev>error|warning|info):\s*(?P<rest>.*)$")
+
+          with open("scalafix-report.txt") as f:
+              for raw in f:
+                  line = raw.rstrip("\n")
+                  m = pat2.match(line) or pat.match(line)
+                  if not m:
+                      continue
+                  f_path = norm(m.group("file"))
+                  ln = int(m.group("line"))
+                  ranges = changed.get(f_path, [])
+                  if any(s <= ln <= e for s, e in ranges):
+                      hits.append({
+                          "file": f_path,
+                          "line": ln,
+                          "col": int(m.group("col")),
+                          "severity": m.group("sev"),
+                          "message": m.group("rest").strip(),
+                      })
+
+          with open("scalafix-hits.json", "w") as f:
+              json.dump(hits, f, indent=2)
+
+          print(f"Diff-aware hits: {len(hits)}")
+          for h in hits:
+              print(f"  {h['file']}:{h['line']}:{h['col']} [{h['severity']}] {h['message']}")
+
+          gh_out = os.environ["GITHUB_OUTPUT"]
+          with open(gh_out, "a") as f:
+              f.write(f"hit_count={len(hits)}\n")
+          PY
+          python3 /tmp/intersect.py
+
+      - name: Upload scalafix report
+        if: steps.changed.outputs.skip == 'false' && steps.intersect.outputs.hit_count != '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: scalafix-report
+          path: |
+            scalafix-report.txt
+            scalafix-hits.json
+            changed-lines.json
+
+      - name: Post sticky PR comment
+        if: steps.changed.outputs.skip == 'false' && steps.intersect.outputs.hit_count != '0'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: scalafix-bug-learner
+          message: |
+            ### Scalafix bug-learner rules: ${{ steps.intersect.outputs.hit_count }} finding(s) on changed lines
+
+            <details>
+            <summary>Click to expand findings</summary>
+
+            See workflow artifact `scalafix-report` for full output.
+            Findings are listed in `scalafix-hits.json`.
+
+            </details>
+
+            Run `sbt "scalafixAll --rules file:project/scalafix-rules"` locally to auto-fix where possible.
+
+      - name: Fail if findings on changed lines
+        if: steps.changed.outputs.skip == 'false' && steps.intersect.outputs.hit_count != '0'
+        run: |
+          echo "Scalafix found ${{ steps.intersect.outputs.hit_count }} issue(s) on lines changed in this PR."
+          exit 1
+
+      - name: Clear sticky comment when clean
+        if: steps.changed.outputs.skip == 'false' && steps.intersect.outputs.hit_count == '0'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: scalafix-bug-learner
+          delete: true

@@ -1,0 +1,22 @@
+rules:
+  - id: ts-array-sort-numbers-without-comparator
+    languages:
+      - typescript
+    severity: WARNING
+    message: >-
+      Array.prototype.sort() with no comparator sorts elements by their string
+      conversion, which gives wrong order for numbers (e.g. [10, 2, 1] -> [1, 10, 2]).
+      Pass an explicit numeric comparator such as `(a, b) => a - b`.
+      Origin: example corpus — numeric sort without comparator.
+    patterns:
+      - pattern-either:
+          # Sorting durations / numeric collections built via Array.from(new Set(...))
+          - pattern: Array.from(new Set($X)).sort()
+          # Sorting a numeric-named local with no comparator
+          - patterns:
+              - pattern: $ARR.sort()
+              - metavariable-regex:
+                  metavariable: $ARR
+                  regex: ^(durations?|prices?|amounts?|numbers?|counts?|indexes|indices|ids|timestamps?|years?|months?|days?|minutes?|hours?|seconds?|ms|millis|scores?|sizes?)$
+      # Negative guard: exclude calls that already pass a comparator argument.
+      - pattern-not: $ARR.sort($CMP)

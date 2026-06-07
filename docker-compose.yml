@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: rbl-postgres
+    environment:
+      POSTGRES_USER: rbl
+      POSTGRES_PASSWORD: rbl
+      POSTGRES_DB: rbl
+    ports:
+      - "5432:5432"
+    volumes:
+      - rbl-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "rbl"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  rbl-pgdata:

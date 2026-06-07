@@ -1,0 +1,24 @@
+rules:
+  - id: no-await-result-in-production
+    languages: [scala]
+    severity: ERROR
+    message: >
+      `Await.result` / `Await.ready` blocks the calling thread. In an
+      async-by-default service this exhausts the EC pool and causes cascading
+      timeouts. Use `for`/`flatMap` to compose Futures, or `.onComplete` if
+      you must side-effect at the edge.
+    metadata:
+      category: reliability
+      owner: platform
+      origin-bugs: []
+    pattern-either:
+      - pattern: scala.concurrent.Await.result(...)
+      - pattern: scala.concurrent.Await.ready(...)
+      - pattern: Await.result(...)
+      - pattern: Await.ready(...)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/it/**"
+        - "**/specs2/**"
+        - "**/Main.scala"               # bootstrap is allowed to block

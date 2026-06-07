@@ -1,0 +1,159 @@
+name: Scalafix Full Scan (Weekly)
+
+# Runs the full repo-bug-learner rule set across the entire repository
+# every Monday at 06:00 UTC (and on manual dispatch). Uploads a report
+# artifact and opens/updates a single tracking issue listing all hits
+# grouped by rule.
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  full-scan:
+    name: Full repo scalafix scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: sbt
+
+      - name: Setup sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Pull rules artifact
+        env:
+          RULES_REPO: ${{ secrets.RULES_REPO }}
+          RULES_TOKEN: ${{ secrets.RULES_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          REPO="${RULES_REPO:?Set RULES_REPO to org/static-analysis-rules}"
+          TMP=$(mktemp -d)
+          if [ -n "${RULES_TOKEN:-}" ]; then
+            git clone --depth=1 "https://x-access-token:${RULES_TOKEN}@github.com/${REPO}.git" "$TMP/rules"
+          else
+            git clone --depth=1 "https://github.com/${REPO}.git" "$TMP/rules"
+          fi
+          mkdir -p project/scalafix-rules
+          cp -r "$TMP/rules/rules/." project/scalafix-rules/
+
+      - name: Run scalafix (full repo)
+        id: scalafix
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          sbt "scalafixAll --check --rules file:project/scalafix-rules" 2>&1 | tee scalafix-report.txt
+
+      - name: Parse findings and group by rule
+        id: parse
+        run: |
+          set -euo pipefail
+          cat > /tmp/parse_full.py <<'PY'
+          import re, json, os, collections
+
+          pat = re.compile(r"^(?P<file>[^:\s][^:]*\.scala):(?P<line>\d+):(?P<col>\d+):\s*(?P<sev>error|warning|info):\s*(?P<rule>[A-Za-z0-9_.\-]+):\s*(?P<msg>.*)$")
+          pat_alt = re.compile(r"^\[(?P<sev>error|warning|info)\]\s*(?P<file>[^:\s][^:]*\.scala):(?P<line>\d+):(?P<col>\d+):\s*(?P<rule>[A-Za-z0-9_.\-]+):\s*(?P<msg>.*)$")
+
+          by_rule = collections.defaultdict(list)
+          total = 0
+          with open("scalafix-report.txt") as f:
+              for raw in f:
+                  line = raw.rstrip("\n")
+                  m = pat.match(line) or pat_alt.match(line)
+                  if not m:
+                      continue
+                  total += 1
+                  by_rule[m.group("rule")].append({
+                      "file": m.group("file"),
+                      "line": int(m.group("line")),
+                      "col": int(m.group("col")),
+                      "severity": m.group("sev"),
+                      "message": m.group("msg").strip(),
+                  })
+
+          repo = os.environ["GITHUB_REPOSITORY"]
+          sha = os.environ["GITHUB_SHA"]
+
+          lines = ["# Scalafix Full Scan Report",
+                   "",
+                   f"Commit: `{sha}`",
+                   f"Total findings: **{total}** across **{len(by_rule)}** rule(s).",
+                   ""]
+          for rule in sorted(by_rule.keys()):
+              hits = by_rule[rule]
+              lines.append(f"## `{rule}` ({len(hits)})")
+              lines.append("")
+              for h in hits[:50]:
+                  url = f"https://github.com/{repo}/blob/{sha}/{h['file']}#L{h['line']}"
+                  lines.append(f"- [{h['file']}:{h['line']}]({url}) - {h['message']}")
+              if len(hits) > 50:
+                  lines.append(f"- _...and {len(hits) - 50} more_")
+              lines.append("")
+
+          with open("issue-body.md", "w") as f:
+              f.write("\n".join(lines))
+
+          with open("scalafix-hits.json", "w") as f:
+              json.dump(by_rule, f, indent=2)
+
+          gh_out = os.environ["GITHUB_OUTPUT"]
+          with open(gh_out, "a") as f:
+              f.write(f"total={total}\n")
+              f.write(f"rules={len(by_rule)}\n")
+          PY
+          python3 /tmp/parse_full.py
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: scalafix-full-scan
+          path: |
+            scalafix-report.txt
+            scalafix-hits.json
+            issue-body.md
+
+      - name: Open or update tracking issue
+        uses: actions/github-script@v7
+        env:
+          TOTAL: ${{ steps.parse.outputs.total }}
+          RULES: ${{ steps.parse.outputs.rules }}
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('issue-body.md', 'utf8');
+            const total = process.env.TOTAL || '0';
+            const rules = process.env.RULES || '0';
+            const title = `Scalafix full-scan tracker: ${total} finding(s) across ${rules} rule(s)`;
+            const marker = '<!-- scalafix-full-scan-tracker -->';
+            const fullBody = `${marker}\n\n${body}`;
+
+            const { owner, repo } = context.repo;
+            const existing = await github.paginate(github.rest.issues.listForRepo, {
+              owner, repo, state: 'open', labels: 'scalafix-tracker', per_page: 100,
+            });
+            const found = existing.find(i => (i.body || '').includes(marker));
+
+            if (found) {
+              await github.rest.issues.update({
+                owner, repo, issue_number: found.number,
+                title, body: fullBody,
+              });
+              core.info(`Updated issue #${found.number}`);
+            } else {
+              const created = await github.rest.issues.create({
+                owner, repo, title, body: fullBody,
+                labels: ['scalafix-tracker'],
+              });
+              core.info(`Created issue #${created.data.number}`);
+            }

@@ -1,0 +1,63 @@
+// ============================================================
+// repo-bug-learner integration — copy into your service's build.sbt
+// ============================================================
+//
+// Adds Scalafix, Scapegoat, and WartRemover to a Scala service.
+//
+// What this enables:
+//   - SemanticDB compilation output (consumed by Scalafix semantic rules)
+//   - The sbt-scalafix plugin with your published scalafix-rules artifact
+//   - Scapegoat — built-in Scala bug inspections
+//   - WartRemover — compile-time bans for specific anti-patterns
+//
+// Build-time overhead: ~10-15% slower compile due to SemanticDB. Profile first
+// if your service has tight CI SLOs.
+
+// 1) plugins (in project/plugins.sbt)
+//
+//   addSbtPlugin("ch.epfl.scala"        % "sbt-scalafix"     % "0.14.6")
+//   addSbtPlugin("com.sksamuel.scapegoat" %% "sbt-scapegoat"  % "1.2.7")
+//   addSbtPlugin("org.wartremover"      % "sbt-wartremover"  % "3.2.5")
+
+
+// 2) settings (in build.sbt, inside inThisBuild or a per-project block)
+inThisBuild(List(
+  scalaVersion := "2.12.21",
+
+  // SemanticDB — required by Scalafix semantic rules
+  semanticdbEnabled := true,
+  semanticdbVersion := scalafixSemanticdb.revision,
+  scalacOptions ++= Seq(
+    "-Yrangepos",
+    "-P:semanticdb:synthetics:on",
+    "-Ywarn-unused-import",
+  ),
+
+  // Pull rules from your published scalafix-rules artifact.
+  scalafixDependencies ++= Seq(
+    "com.example" %% "static-analysis-scalafix-rules" % "0.1.0",
+  ),
+
+  // Scapegoat
+  scapegoatVersion := "3.1.10",
+  scapegoatReports := Seq("xml", "html"),
+
+  // WartRemover — only the bans you want enforced as compile errors.
+  wartremoverErrors ++= Seq(
+    Wart.Null,
+    Wart.OptionPartial,
+    Wart.TryPartial,
+    Wart.ArrayEquals,
+    Wart.Var,
+    Wart.Return,
+    Wart.AsInstanceOf,
+    Wart.IsInstanceOf,
+  ),
+))
+
+// 3) Initial scan: after adding the above, run once across the service.
+//      sbt "scapegoat ; scalafixAll --check"
+//    Triage findings into fix-now, backlog, or disable-noise buckets.
+//
+// 4) Once initial scan is triaged, the workflows in .github/workflows/ gate
+//    new violations on every PR (diff-aware — won't fail on existing issues).

@@ -1,0 +1,8 @@
+fix.MissingWithAdapterIdentity
+fix.UnclampedOpenSpots
+fix.MissingDollarInInterpolation
+fix.StatusRuntimeExceptionForBusinessError
+fix.BrokenInterpolationFieldAccess
+fix.StaffQueryMissingAppDefId
+fix.CalendarNowWithoutExplicitTimezone
+fix.TryOptionUnwrappedAccess

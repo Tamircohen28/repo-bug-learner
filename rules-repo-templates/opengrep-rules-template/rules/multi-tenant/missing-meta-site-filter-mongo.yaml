@@ -1,0 +1,29 @@
+rules:
+  - id: missing-meta-site-filter-mongo
+    languages: [scala]
+    severity: ERROR
+    message: >
+      MongoDB query on Bookings collection without metaSiteId filter. This is
+      a cross-tenant data leak risk. Add `Filters.eq("metaSiteId", metaSiteId)`
+      to the filter chain, or pass `metaSiteId` as a method argument.
+    metadata:
+      category: tenancy
+      owner: platform
+      origin-bugs: []                            # populated by synthesizer
+      cwe: "CWE-639: Authorization Bypass Through User-Controlled Key"
+    pattern-either:
+      - pattern: $COLL.find($FILTER)
+      - pattern: $COLL.find($FILTER, $OPTS)
+      - pattern: $COLL.findOne($FILTER)
+      - pattern: $COLL.aggregate(...)
+    # Negative patterns — the safe forms we don't want to flag
+    pattern-not: $COLL.find(Filters.and(..., Filters.eq("metaSiteId", $X), ...))
+    pattern-not: $COLL.find($FILTER.append("metaSiteId", $X))
+    pattern-not: $COLL.find(Filters.eq("metaSiteId", $X))
+    paths:
+      include:
+        - "**/*Repo.scala"
+        - "**/repo/*.scala"
+        - "**/dao/*.scala"
+      exclude:
+        - "**/test/**"

@@ -1,0 +1,13 @@
+name: Bug report
+description: Report a problem with repo-bug-learner
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce

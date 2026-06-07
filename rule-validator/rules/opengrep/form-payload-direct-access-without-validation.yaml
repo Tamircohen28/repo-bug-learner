@@ -1,0 +1,36 @@
+rules:
+  - id: form-payload-direct-access-without-validation
+    languages:
+      - typescript
+    severity: WARNING
+    message: >-
+      Direct field access on a form-submission payload (`*Submission`,
+      `*FormPayload`, `*IntakeForm`) without a preceding validation guard.
+      Form submissions are user-controlled input — read `.fields`/`.formFields`
+      only after running `validate*Form*(...)` or `is*Valid(...)`. Origin: example corpus.
+    paths:
+      exclude:
+        - "*.test.ts"
+        - "*.spec.ts"
+        - "*.test.tsx"
+        - "*.spec.tsx"
+        - "__tests__/*"
+        - "__mocks__/*"
+    patterns:
+      - pattern-either:
+          - pattern: $X.fields.$Y
+          - pattern: $X.formFields.$Y
+      - metavariable-regex:
+          metavariable: $X
+          regex: (?i)^([a-z][a-z0-9]*)?(submission|formpayload|intakeform)$
+      - pattern-not-inside:
+          patterns:
+            - pattern: |
+                if ($GUARD(...)) { ... }
+            - metavariable-regex:
+                metavariable: $GUARD
+                regex: ^(validate|is|isValid|assert|verify|check).*$
+      - pattern-not-inside: |
+          if ($V.isValid) { ... }
+      - pattern-not-inside: |
+          if ($V.isValid()) { ... }

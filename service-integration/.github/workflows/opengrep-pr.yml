@@ -1,0 +1,158 @@
+name: Opengrep PR Check (Diff-Aware)
+
+# Runs the repo-bug-learner Opengrep/Semgrep rule set on every PR, but only
+# fails the build if a rule fires INSIDE lines that were actually changed in the
+# PR. Complements scalafix-pr.yml (which covers Scala) — this covers TS/JS.
+
+on:
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  opengrep:
+    name: Opengrep (changed lines only)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Semgrep
+        run: pip install --quiet semgrep==1.163.0
+
+      - name: Pull rules artifact
+        env:
+          RULES_REPO: ${{ secrets.RULES_REPO }}
+          RULES_REPO_TOKEN: ${{ secrets.RULES_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          REPO="${RULES_REPO:?Set RULES_REPO to org/static-analysis-rules}"
+          if [ -n "${RULES_REPO_TOKEN:-}" ]; then
+            git clone --depth=1 "https://x-access-token:${RULES_REPO_TOKEN}@github.com/${REPO}.git" /tmp/bug-rules
+          else
+            git clone --depth=1 "https://github.com/${REPO}.git" /tmp/bug-rules
+          fi
+          mkdir -p project/opengrep-rules
+          cp -r /tmp/bug-rules/rules/opengrep/. project/opengrep-rules/ 2>/dev/null || \
+            { echo "No opengrep rules in artifact; skipping."; echo "skip=true" >> $GITHUB_OUTPUT; }
+
+      - name: Collect changed TS/JS files
+        id: changed
+        run: |
+          set -euo pipefail
+          BASE="origin/${{ github.base_ref }}"
+          git fetch origin "${{ github.base_ref }}" --depth=0 || true
+          CHANGED=$(git diff --name-only "$BASE"...HEAD -- '*.ts' '*.tsx' '*.js' '*.jsx' || true)
+          {
+            echo "files<<EOF"
+            echo "$CHANGED"
+            echo "EOF"
+            if [ -z "$CHANGED" ]; then
+              echo "skip=true"
+            else
+              echo "skip=false"
+            fi
+          } >> $GITHUB_OUTPUT
+
+      - name: Run Semgrep on changed files
+        if: steps.changed.outputs.skip != 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p project
+          # shellcheck disable=SC2046
+          semgrep --quiet --json --error \
+            --config project/opengrep-rules \
+            $(echo "${{ steps.changed.outputs.files }}" | tr '\n' ' ') \
+            > opengrep-report.json || true
+          cat > /tmp/print_report.py <<'PY'
+          import json
+          d = json.load(open("opengrep-report.json"))
+          print(f'Total findings: {len(d.get("results", []))}')
+          for r in d.get("results", [])[:20]:
+              print(f'  {r["path"]}:{r["start"]["line"]} [{r["check_id"]}] {r["extra"]["message"]}')
+          PY
+          python3 /tmp/print_report.py
+
+      - name: Compute diff-aware intersection
+        if: steps.changed.outputs.skip != 'true'
+        id: hits
+        run: |
+          set -euo pipefail
+          # Stash changed-files list (handles spaces / newlines correctly).
+          cat > /tmp/changed_files.txt <<'EOF_FILES'
+          ${{ steps.changed.outputs.files }}
+          EOF_FILES
+          cat > /tmp/diff_aware.py <<'PY'
+          import json, re, subprocess, os, sys
+          base = os.environ["BASE_REF"]
+          changed_files = [
+              ln.strip() for ln in open("/tmp/changed_files.txt") if ln.strip()
+          ]
+          ranges = {}
+          for f in changed_files:
+              out = subprocess.run(
+                  ["git", "diff", "--unified=0", f"origin/{base}...HEAD", "--", f],
+                  capture_output=True, text=True, check=False,
+              ).stdout
+              ranges.setdefault(f, [])
+              for m in re.finditer(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@", out, re.M):
+                  start = int(m.group(1))
+                  count = int(m.group(2) or "1")
+                  if count > 0:
+                      ranges[f].append((start, start + count - 1))
+          with open("changed-lines.json", "w") as fp:
+              json.dump(ranges, fp)
+          report = json.load(open("opengrep-report.json"))
+          hits = []
+          for r in report.get("results", []):
+              path = r["path"]
+              line = r["start"]["line"]
+              for s, e in ranges.get(path, []):
+                  if s <= line <= e:
+                      hits.append({
+                          "file": path, "line": line,
+                          "rule": r["check_id"],
+                          "message": r["extra"]["message"],
+                          "severity": r["extra"].get("severity", "INFO"),
+                      })
+                      break
+          json.dump(hits, open("opengrep-hits.json", "w"), indent=2)
+          print(f"diff-aware hits: {len(hits)}")
+          if hits:
+              print("FAIL: Opengrep rule(s) fired inside PR-changed lines.")
+              sys.exit(1)
+          PY
+          python3 /tmp/diff_aware.py
+        env:
+          BASE_REF: ${{ github.base_ref }}
+
+      - name: Upload report
+        if: failure() && steps.changed.outputs.skip != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: opengrep-report
+          path: |
+            opengrep-report.json
+            opengrep-hits.json
+            changed-lines.json
+
+      - name: Sticky PR comment
+        if: failure() && steps.changed.outputs.skip != 'true'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: opengrep-bug-learner
+          message: |
+            ## Opengrep PR Check — hits inside changed lines
+            One or more rules fired in lines you changed. See the `opengrep-report` artifact for the full report.
+          delete: false

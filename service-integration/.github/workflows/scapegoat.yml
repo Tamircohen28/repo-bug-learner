@@ -1,0 +1,48 @@
+name: scapegoat
+on:
+  pull_request:
+    branches: [main, master]
+  schedule:
+    - cron: "0 6 * * 1"                           # Weekly full scan, Monday morning
+
+concurrency:
+  group: scapegoat-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scapegoat:
+    # Scapegoat is informational. New findings get commented on the PR but
+    # don't block merge. (Custom Scalafix rules from bug-learner are the gate.)
+    name: Scapegoat (informational)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: olafurpg/setup-scala@v14
+        with:
+          java-version: 'adopt@1.11'
+
+      - uses: coursier/cache-action@v6
+
+      - name: Run Scapegoat
+        run: |
+          sbt scapegoat
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scapegoat-report
+          path: target/scala-*/scapegoat-report/
+          if-no-files-found: ignore
+
+      - name: Comment new findings on PR
+        if: github.event_name == 'pull_request'
+        run: |
+          # TODO: Parse scapegoat-report/scapegoat.xml, diff against the base
+          # branch's report, post a PR comment with the delta.
+          # Until then, the artifact is downloadable from the action run.
+          echo "Scapegoat report available as an action artifact."

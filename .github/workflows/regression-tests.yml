@@ -1,0 +1,41 @@
+name: Scanner regression tests
+
+# Runs the unit-test suite for scripts/scan_repo.py specialized emulators on
+# every push and PR. Tests live at scripts/test_scan_repo_paths.py and cover
+# the lessons from iter-17 through iter-20:
+#  - relative-path matching (iter-20)
+#  - Clock/storage-ts/getOrElse exclusions in CalendarNowWithoutExplicitTimezone
+#    (iter 19)
+#  - adapter-receiver removal in StaffQueryMissingAppDefId (iter 20)
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  regression:
+    name: Scan emulator regression tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run regression tests
+        run: |
+          set -euo pipefail
+          python -m venv .venv
+          # No external deps needed — scan_repo.py uses stdlib only.
+          .venv/bin/python scripts/test_scan_repo_paths.py
+
+      - name: Install semgrep for precision corpora
+        run: .venv/bin/pip install --quiet semgrep==1.163.0
+
+      - name: Precision corpora — fail if any rule drops below 75%
+        run: .venv/bin/python scripts/precision_check.py

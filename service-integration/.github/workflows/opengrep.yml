@@ -1,0 +1,50 @@
+name: opengrep
+on:
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: opengrep-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write                          # SARIF upload
+
+jobs:
+  opengrep:
+    name: Opengrep (custom rules)
+    runs-on: ubuntu-latest
+    container: opengrep/opengrep:latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Pull the rules repo. The rules repo's auto-generated PRs from
+      # repo-bug-learner deploy here on merge.
+      - name: Checkout rules repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.RULES_REPO }}
+          path: analysis-rules
+          token: ${{ secrets.RULES_REPO_TOKEN }}
+          ref: main
+
+      - name: Run Opengrep (diff-aware)
+        run: |
+          opengrep scan \
+            --config=./analysis-rules/rules/ \
+            --baseline-ref=origin/${{ github.base_ref }} \
+            --sarif --output=opengrep.sarif \
+            --error \
+            --metrics=off \
+            .
+
+      # Upload findings to GitHub Code Scanning (Security tab + PR review surface)
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: opengrep.sarif
+          category: opengrep

@@ -1,0 +1,37 @@
+name: scalafix
+on:
+  pull_request:
+    branches: [main, master]
+
+# Concurrency: cancel in-flight runs on the same PR when a new push comes in
+concurrency:
+  group: scalafix-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scalafix:
+    name: Scalafix (custom Bookings rules)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0                          # required for --diff-base
+
+      - uses: olafurpg/setup-scala@v14
+        with:
+          java-version: 'adopt@1.11'
+
+      - uses: coursier/cache-action@v6
+
+      # Run Scalafix only on lines changed in this PR. New violations fail the build.
+      # Pre-existing violations are reported but don't block.
+      - name: Run Scalafix on PR diff
+        run: |
+          sbt -v "; scalafixAll --check --diff-base=origin/${{ github.base_ref }}"
+
+      # Surface findings in the PR check summary
+      - name: Annotate findings
+        if: failure()
+        run: |
+          echo "::error::Scalafix found new rule violations. See logs above and consult"
+          echo "::error::your rules repository README for rule details."

@@ -1,0 +1,42 @@
+rules:
+  - id: calendar-scheduled-time-without-explicit-timezone
+    languages: [typescript]
+    severity: WARNING
+    message: |
+      Assigning bare `new Date()` (no args) to a scheduling field inherits the
+      runtime's local timezone, causing DST/timezone bugs across server/client
+      boundaries. Pass an explicit ISO string, epoch, or timezone-aware Date
+      (e.g. `new Date(Date.UTC(...))` or `dayjs.tz(value, businessTimezone)`).
+
+      Origin: example corpus — schedule-intent-only successor to the deferred broad `new Date()` rule.
+    paths:
+      include:
+        - "*.ts"
+        - "*.tsx"
+      exclude:
+        - "*.test.ts"
+        - "*.test.tsx"
+        - "*.spec.ts"
+        - "*.spec.tsx"
+        - "__tests__/*"
+        - "__mocks__/*"
+        - "*/testkit/*"
+        - "*/testkits/*"
+        - "*TestKit.ts"
+        - "*TestKit.tsx"
+        - "*.testkit.ts"
+        - "*.testkit.tsx"
+        - "*/e2e/*"
+        - "*.example.ts"
+        - "*.example.tsx"
+    patterns:
+      - pattern-either:
+          - pattern: "{ ..., scheduledAt: new Date(), ... }"
+          - pattern: "{ ..., startTime: new Date(), ... }"
+          - pattern: "{ ..., endTime: new Date(), ... }"
+          - pattern: "{ ..., bookingDate: new Date(), ... }"
+          - pattern: "{ ..., appointmentTime: new Date(), ... }"
+          - pattern: "{ ..., eventStart: new Date(), ... }"
+          - pattern: "{ ..., eventEnd: new Date(), ... }"
+          - pattern: "{ ..., slotStart: new Date(), ... }"
+          - pattern: "{ ..., slotEnd: new Date(), ... }"

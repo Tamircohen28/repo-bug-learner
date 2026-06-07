@@ -1,0 +1,109 @@
+rules:
+  - id: calendar-now-without-explicit-timezone
+    languages:
+      - typescript
+    severity: WARNING
+    message: >-
+      Calendar/availability/time-slot code is calling `new Date()`, `dayjs()`,
+      or `moment()` with no arguments, which inherits the runtime's local
+      timezone. This causes DST and timezone mismatches across server/client
+      boundaries. Pass an explicit ISO string, epoch, or timezone (e.g.
+      `dayjs.tz(value, businessTimezone)`).
+      Origin: cross-repo signal — calendar-themed PRs in scheduler (644)
+      and bookings-mobile (160) consistently fix tz-leak bugs.
+    paths:
+      include:
+        - "*calendar*"
+        - "*Calendar*"
+        - "*TimeSlot*"
+        - "*timeSlot*"
+        - "*Availability*"
+        - "*availability*"
+        - "*Scheduler*"
+        - "*scheduler*"
+      exclude:
+        - "*.test.ts"
+        - "*.spec.ts"
+        - "*.test.tsx"
+        - "*.spec.tsx"
+        - "__tests__/*"
+        - "__mocks__/*"
+        - "*/appendices/*"
+        - "*/docs/*"
+        - "*/examples/*"
+        - "*/example/*"
+        - "*.example.ts"
+        - "*.example.tsx"
+        - "*.testkit.ts"
+        - "*.testkit.tsx"
+        - "*/testkit/*"
+        - "*/testkits/*"
+        - "*/e2e/*"
+        - "*TestKit.ts"
+        - "*TestKit.tsx"
+        - "*Dummy.ts"
+        - "*Dummy.tsx"
+        - "*/production-e2e/*"
+        - "*/__tests__/*"
+        - "*Constants.ts"
+        - "*/constants.ts"
+        - "*/constants/*"
+    patterns:
+      - pattern-either:
+          - pattern: new Date()
+          - pattern: dayjs()
+          - pattern: moment()
+      - pattern-not: new Date($X)
+      - pattern-not: new Date($X, ...)
+      - pattern-not: dayjs($X)
+      - pattern-not: dayjs($X, ...)
+      - pattern-not: moment($X)
+      - pattern-not: moment($X, ...)
+      - pattern-not-inside: moment().weekday(...)
+      - pattern-not-inside: moment().day(...)
+      - pattern-not-inside: dayjs().weekday(...)
+      - pattern-not-inside: dayjs().day(...)
+      - pattern-not-inside: moment().isoWeekday(...)
+      - pattern-not-inside: dayjs().isoWeekday(...)
+      # iter-16: epoch is tz-independent, suppress .getTime() / .valueOf() chains
+      - pattern-not-inside: new Date().getTime()
+      - pattern-not-inside: new Date().valueOf()
+      - pattern-not-inside: dayjs().valueOf()
+      - pattern-not-inside: moment().valueOf()
+      # iter-16b: ISO string is timezone-normalized to UTC, suppress .toISOString()
+      - pattern-not-inside: new Date().toISOString()
+      - pattern-not-inside: moment().toISOString()
+      - pattern-not-inside: dayjs().toISOString()
+      # iter-16b: `?? new Date()` / `|| new Date()` fallback for already-instant params
+      - pattern-not-inside: $X ?? new Date()
+      - pattern-not-inside: $X || new Date()
+      - pattern-not-inside: $X ?? dayjs()
+      - pattern-not-inside: $X || dayjs()
+      # iter-16c: UI floor/anchor props (minDate, maxDate, initialDate, etc.)
+      - pattern-not-inside: |
+          { minDate: new Date(), ... }
+      - pattern-not-inside: |
+          { maxDate: new Date(), ... }
+      - pattern-not-inside: |
+          { initialDate: new Date(), ... }
+      - pattern-not-inside: |
+          { defaultDate: new Date(), ... }
+      - pattern-not-inside: |
+          { from: new Date(), ... }
+      - pattern-not-inside: |
+          { to: new Date(), ... }
+      # iter-16c: tz-aware helper sinks already pass an explicit tz
+      - pattern-not-inside: getDateHyphened(new Date(), ...)
+      - pattern-not-inside: getCalendarDateString(new Date(), ...)
+      # iter-16c: epoch arithmetic (subtraction or multiplication w/ ms constants)
+      - pattern-not-inside: new Date().getTime() - ...
+      - pattern-not-inside: new Date().getTime() + ...
+      - pattern-not-inside: ... - new Date().getTime()
+      - pattern-not-inside: ... + new Date().getTime()
+      # iter-16: suppress when used as a "now" comparator argument alongside an explicit tz/timezone identifier in same call
+      - pattern-not-inside: |
+          $F(..., new Date(), ..., timezone, ...)
+      - pattern-not-inside: |
+          $F(..., new Date(), ..., timeZone, ...)
+      - pattern-not-inside: |
+          $F(..., new Date(), ..., tz, ...)

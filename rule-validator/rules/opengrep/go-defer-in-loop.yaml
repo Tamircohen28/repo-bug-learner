@@ -1,0 +1,18 @@
+rules:
+  - id: go-defer-in-loop
+    languages:
+      - go
+    severity: WARNING
+    message: >-
+      Resource opened inside a range loop without per-iteration cleanup.
+      defer in a loop runs at function exit — wrap the body in a helper or close explicitly.
+    metadata:
+      category: correctness
+      origin-bugs: [example-corpus]
+      owner: platform
+    patterns:
+      - pattern-inside: |
+          for _, $ITEM := range $ITEMS {
+            ...
+          }
+      - pattern: $F, _ := os.Open($PATH)

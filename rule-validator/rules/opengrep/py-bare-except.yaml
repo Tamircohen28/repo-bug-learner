@@ -1,0 +1,17 @@
+rules:
+  - id: py-bare-except
+    languages:
+      - python
+    severity: WARNING
+    message: >-
+      Bare except catches all exceptions. Catch a specific exception type instead.
+    metadata:
+      category: correctness
+      origin-bugs: [example-corpus]
+      owner: platform
+    patterns:
+      - pattern: |
+          try:
+            ...
+          except:
+            ...

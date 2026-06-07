@@ -1,0 +1,54 @@
+rules:
+  - id: ts-staff-query-missing-appdefid
+    languages:
+      - typescript
+    severity: WARNING
+    message: >-
+      Call to a staff repository or service method (receiver containing
+      `staff`/`Staff`) is missing an `appDefId` (or
+      `applicationDefinitionId`/`appId`) field on the argument object.
+      Unscoped staff queries have caused cross-tenant data leaks and
+      stale-cache bugs in multi-tenant systems. Pass the app-def-id explicitly in the request object.
+      Origin: example corpus — TS variant of the Scalafix `StaffQueryMissingAppDefId` rule.
+    paths:
+      exclude:
+        - "*.test.ts"
+        - "*.spec.ts"
+        - "*.test.tsx"
+        - "*.spec.tsx"
+        - "__tests__/*"
+        - "__mocks__/*"
+    patterns:
+      # iter-18 fix: revert to constrained receiver allowlist. The previous
+      # `.*[sS]taff.*` regex matched too many unrelated identifiers (e.g.
+      # StaffSectionSummary, StaffAvailabilityList). Only known repository/
+      # service receivers should match.
+      - pattern-either:
+          - pattern: staffRepository.$M({...})
+          - pattern: $X.staffRepository.$M({...})
+          - pattern: staffMembersService.$M({...})
+          - pattern: $X.staffMembersService.$M({...})
+          - pattern: staffMembersAdapter.$M({...})
+          - pattern: $X.staffMembersAdapter.$M({...})
+          - pattern: staffApi.$M({...})
+          - pattern: $X.staffApi.$M({...})
+      - pattern-not: "$ANY.$M({..., appDefId: $X, ...})"
+      - pattern-not: "$ANY.$M({..., applicationDefinitionId: $X, ...})"
+      - pattern-not: "$ANY.$M({..., appId: $X, ...})"
+      # iter-29: chained-receiver variants — `ctx.staffApi.search({..., appDefId: ...})`
+      # Use one explicit pattern-not per receiver to be safe across semgrep versions.
+      - pattern-not: "$X.staffRepository.$M({..., appDefId: $V, ...})"
+      - pattern-not: "$X.staffMembersService.$M({..., appDefId: $V, ...})"
+      - pattern-not: "$X.staffMembersAdapter.$M({..., appDefId: $V, ...})"
+      - pattern-not: "$X.staffApi.$M({..., appDefId: $V, ...})"
+      - pattern-not: "$X.staffRepository.$M({..., applicationDefinitionId: $V, ...})"
+      - pattern-not: "$X.staffMembersService.$M({..., applicationDefinitionId: $V, ...})"
+      - pattern-not: "$X.staffMembersAdapter.$M({..., applicationDefinitionId: $V, ...})"
+      - pattern-not: "$X.staffApi.$M({..., applicationDefinitionId: $V, ...})"
+      - pattern-not: "$X.staffRepository.$M({..., appId: $V, ...})"
+      - pattern-not: "$X.staffMembersService.$M({..., appId: $V, ...})"
+      - pattern-not: "$X.staffMembersAdapter.$M({..., appId: $V, ...})"
+      - pattern-not: "$X.staffApi.$M({..., appId: $V, ...})"
+      # CRM Members APIs are not staff repos — keep explicit excludes (defense in depth)
+      - pattern-not: membersRepository.$M({...})
+      - pattern-not: $ANY.membersRepository.$M({...})

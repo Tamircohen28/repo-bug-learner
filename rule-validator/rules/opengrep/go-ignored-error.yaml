@@ -1,0 +1,14 @@
+rules:
+  - id: go-ignored-error
+    languages:
+      - go
+    severity: ERROR
+    message: >-
+      Error return is ignored. Assign to err and handle with if err != nil.
+    metadata:
+      category: correctness
+      origin-bugs: [example-corpus]
+      owner: platform
+    patterns:
+      - pattern: |
+          $X, _ = $FN(...)

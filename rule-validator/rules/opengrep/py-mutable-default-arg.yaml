@@ -1,0 +1,18 @@
+rules:
+  - id: py-mutable-default-arg
+    languages:
+      - python
+    severity: ERROR
+    message: >-
+      Mutable default argument is shared across calls. Use None and assign inside the body.
+    metadata:
+      category: correctness
+      origin-bugs: [example-corpus]
+      owner: platform
+    pattern-either:
+      - pattern: |
+          def $F($A, $B=[]):
+            ...
+      - pattern: |
+          def $F($A, $B={}):
+            ...
