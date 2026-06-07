@@ -1,4 +1,8 @@
 <p align="center">
+  <img src="assets/banner.png" alt="repo-bug-learner — mine bugs, synthesize rules" width="900"/>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/CI-GitHub%20Actions-blue" alt="CI"/>
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License"/>
 </p>
