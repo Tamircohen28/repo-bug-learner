@@ -31,6 +31,13 @@ python -m src.orchestrator batch --repo backend --since 2024-01-01
 
 Imperative subject, optional scope: `feat: add go opengrep synthesis hints`
 
+## Claude API notes
+
+- Default `model_strong` is `claude-opus-4-8` with adaptive thinking + `xhigh` effort + streaming
+- `model_fast` is `claude-haiku-4-5` — no thinking, no effort param (unsupported on Haiku)
+- The SDK retries 429/5xx automatically; tenacity covers connection failures only
+- Do NOT add `temperature`, `top_p`, or `budget_tokens` to Opus 4.8 calls (all removed on 4.7+)
+
 ## Hard constraints
 
 - Never commit `config/config.toml` or `out/` (local artifacts)
