@@ -1,0 +1,9 @@
+---
+description: "Project-wide conventions — AGENTS.md is canonical"
+alwaysApply: true
+---
+
+This repository's agent instructions live in `AGENTS.md` at the repo root. Treat it as
+the single source of truth for commands, working agreements, repository expectations,
+Claude API notes, key files, and off-limits paths. Do not duplicate that policy here —
+read `AGENTS.md` and follow it.

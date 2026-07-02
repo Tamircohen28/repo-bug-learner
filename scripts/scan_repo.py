@@ -16,14 +16,12 @@ import argparse
 import datetime as _dt
 import fnmatch
 import json
-import os
 import re
 import subprocess
 import sys
 import time
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
-from typing import Iterable
 
 # ---------------------------------------------------------------------------
 # Rule discovery + rationale parsing

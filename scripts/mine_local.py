@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import subprocess
 import sys
@@ -17,7 +16,6 @@ import time
 from collections import Counter
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Iterable
 
 from rich.console import Console
 from rich.progress import (

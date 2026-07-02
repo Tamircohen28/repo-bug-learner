@@ -31,7 +31,7 @@ from .stage4_synthesize.opengrep_synthesizer import OpengrepSynthesizer
 from .stage4_synthesize.scalafix_synthesizer import ScalafixSynthesizer
 from .stage5_validate.validator import Validator
 from .stage6_ship.pr_creator import PRShipper
-from .types import CandidateRule, Cluster, OpengrepLanguage, PipelineState, ValidationResult
+from .types import CandidateRule, Cluster, PipelineState, ValidationResult
 
 console = Console()
 
