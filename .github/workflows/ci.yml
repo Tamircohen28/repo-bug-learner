@@ -27,6 +27,13 @@ jobs:
           python-version: '3.12'
       - run: make test
 
+  agent-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Validate agent instruction files
+        run: make agent:check
+
   secret-scan:
     runs-on: ubuntu-latest
     steps:

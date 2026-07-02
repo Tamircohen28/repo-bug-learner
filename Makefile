@@ -1,7 +1,11 @@
-.PHONY: install test lint clean schema precision
+.PHONY: install test lint clean schema precision agent\:check
 
 install:
 	uv sync --extra dev
+
+# Run `make agent:check` to validate agent instruction files (AGENTS.md + adapters).
+agent\:check:
+	bash scripts/check-agent-drift.sh
 
 test: precision
 	python -m venv .venv 2>/dev/null || true
