@@ -12,9 +12,7 @@ import subprocess
 import sys
 import datetime as dt
 import re
-from typing import Any
 
-import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import TruncatedSVD
 
@@ -676,7 +674,7 @@ def main() -> int:
     else:
         date_range = "unknown"
 
-    lang_str = ", ".join(f"{l}: {n}" for l, n in langs.most_common())
+    lang_str = ", ".join(f"{lang}: {n}" for lang, n in langs.most_common())
 
     total_findings_count = sum(sum(per.values()) for per in coverage.values())
     overview_cards = [
@@ -696,7 +694,7 @@ def main() -> int:
     ts = build_time_series(entries)
 
     # top authors
-    print(f"[info] computing top authors from git…", file=sys.stderr)
+    print("[info] computing top authors from git…", file=sys.stderr)
     shas = sorted({e["commit_sha"] for e in entries if e.get("commit_sha")})
     top_authors = get_top_authors(repo, shas, top_n=10)
     print(f"[info] top author top-1: {top_authors[:1]}", file=sys.stderr)
@@ -712,7 +710,7 @@ def main() -> int:
             if bk:
                 assignments[bk] = int(cid)
 
-    print(f"[info] building scatter…", file=sys.stderr)
+    print("[info] building scatter…", file=sys.stderr)
     scatter = build_scatter(entries, assignments)
 
     last_sha = ""

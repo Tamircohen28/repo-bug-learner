@@ -29,14 +29,11 @@ from __future__ import annotations
 import argparse
 import datetime as _dt
 import json
-import os
 import re
-import shutil
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from typing import Iterable
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 RULES_DIR = PROJECT_ROOT / "rule-validator" / "rules"
@@ -367,7 +364,7 @@ def main():
     # iter-24: terse one-line summary on stdout, after the path, so callers see
     # the gist immediately.
     if not findings:
-        print(f"[review] 0 findings — input is clean", file=sys.stderr)
+        print("[review] 0 findings — input is clean", file=sys.stderr)
     else:
         print(f"[review] wrote {len(bundle_paths)} bundle(s) to {out_dir}", file=sys.stderr)
     print(str(out_dir))  # stdout: the output dir path, for the skill to consume

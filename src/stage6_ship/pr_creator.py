@@ -16,7 +16,6 @@ Human review is REQUIRED. We never auto-merge rules.
 
 from __future__ import annotations
 
-from pathlib import Path
 
 from github import Github
 from rich.console import Console

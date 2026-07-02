@@ -18,7 +18,6 @@ to?" without recomputing everything.
 from __future__ import annotations
 
 from collections import defaultdict
-from pathlib import Path
 
 import hdbscan
 import numpy as np

@@ -16,11 +16,10 @@ Output: BugInducingCommit objects, persisted as part of the corpus build (stage 
 
 from __future__ import annotations
 
-from datetime import datetime
 from pathlib import Path
 from typing import Literal
 
-from pydriller import Git, ModifiedFile, Repository
+from pydriller import Git, ModifiedFile
 from rich.console import Console
 
 from ..types import BugInducingCommit, CodeBlock, FixingCommit
