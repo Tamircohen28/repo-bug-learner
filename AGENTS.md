@@ -15,9 +15,13 @@ gate future PRs via CI.
 
 ```bash
 make install   # uv sync --extra dev
+make update    # refresh deps after pulling main
+make uninstall # remove venv + caches
 make test      # precision check + regression scan + pytest
 make lint      # ruff check src scripts
 make precision # precision_check.py (semgrep)
+make agent:check           # drift + feature equivalence + platform targets
+make repo-standards-gate   # agent polish + contract assert (pre-PR)
 make schema    # initialize DB schema
 docker compose up -d   # Postgres + pgvector
 python -m src.orchestrator batch --repo backend --since 2024-01-01
@@ -64,11 +68,17 @@ python -m src.orchestrator batch --repo backend --since 2024-01-01
 | `scripts/scan_repo.py` | Fast repo scanner + review backend |
 | `config/config.example.toml` | Configuration template |
 
+## Versioning
+
+See [docs/engineering/build-and-release/versioning.md](docs/engineering/build-and-release/versioning.md).
+Update `docs/CHANGELOG.md` and root `CHANGELOG.md` under `[Unreleased]` before each release.
+
 ## Detailed guidelines
 
 - [Testing](docs/agent-guidelines/testing.md)
 - [Security](docs/agent-guidelines/security.md)
 - [Style](docs/agent-guidelines/style.md)
+- [Platform equivalence](docs/agent-guidelines/platform-equivalence.md)
 
 ## Off-limits
 
