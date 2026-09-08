@@ -13,6 +13,7 @@ to be wired into the target repo).
 from __future__ import annotations
 
 import argparse
+import contextlib
 import datetime as _dt
 import fnmatch
 import json
@@ -20,7 +21,7 @@ import re
 import subprocess
 import sys
 import time
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
@@ -74,7 +75,7 @@ def _derive_severity(text: str) -> str:
     if any(k in low for k in LOW_KW):
         return "low"
     # explicit severity line?
-    m = re.search(r"^\s*severity\s*[:=]\s*(high|medium|low)", text, re.I | re.M)
+    m = re.search(r"^\s*severity\s*[:=]\s*(high|medium|low)", text, re.IGNORECASE | re.MULTILINE)
     if m:
         return m.group(1).lower()
     return "medium"
@@ -165,21 +166,19 @@ def discover_rules(rules_dir: Path, rationale_roots: list[Path], github_org: str
         rationale_path = _find_rationale_for_rule(name, rationale_roots)
         rationale_txt = ""
         if rationale_path:
-            try:
+            with contextlib.suppress(OSError):
                 rationale_txt = rationale_path.read_text(errors="replace")
-            except OSError:
-                pass
 
         severity = _derive_severity(rationale_txt) if rationale_txt else "medium"
         citations = _parse_citations(rationale_txt, github_org=github_org, repo_hint=repo_hint) if rationale_txt else []
 
         # Diagnostic message keywords (used by the fallback regex emulator)
-        diag_keywords: list[str] = []
-        for dm in re.finditer(r'message\s*=\s*\n?\s*s?"([^"]+)"', txt):
-            diag_keywords.append(dm.group(1))
+        diag_keywords: list[str] = [
+            dm.group(1) for dm in re.finditer(r'message\s*=\s*\n?\s*s?"([^"]+)"', txt)
+        ]
         # Regex hint declared explicitly in the rationale?
         regex_hint = None
-        for rm in re.finditer(r"^#?\s*Regex hint\s*[:=]\s*(.+)$", rationale_txt, re.I | re.M):
+        for rm in re.finditer(r"^#?\s*Regex hint\s*[:=]\s*(.+)$", rationale_txt, re.IGNORECASE | re.MULTILINE):
             regex_hint = rm.group(1).strip()
             break
 
@@ -197,7 +196,7 @@ def discover_rules(rules_dir: Path, rationale_roots: list[Path], github_org: str
 
     # Also add Python emulator rules that don't have scalafix Rule.scala sources.
     # These are defined in SPECIALIZED_EMULATORS and need RuleSpecs for discovery.
-    for rule_name in SPECIALIZED_EMULATORS.keys():
+    for rule_name in SPECIALIZED_EMULATORS:
         if rule_name in seen_names:
             continue  # Skip if already discovered from scalafix
         seen_names.add(rule_name)
@@ -205,10 +204,8 @@ def discover_rules(rules_dir: Path, rationale_roots: list[Path], github_org: str
         rationale_path = _find_rationale_for_rule(rule_name, rationale_roots)
         rationale_txt = ""
         if rationale_path:
-            try:
+            with contextlib.suppress(OSError):
                 rationale_txt = rationale_path.read_text(errors="replace")
-            except OSError:
-                pass
 
         severity = _derive_severity(rationale_txt) if rationale_txt else "medium"
         citations = _parse_citations(rationale_txt, github_org=github_org, repo_hint=repo_hint) if rationale_txt else []
@@ -288,8 +285,8 @@ def enumerate_files(
 # Scanners
 # ---------------------------------------------------------------------------
 
-ADAPTER_CLASS_RE = re.compile(r"^\s*(?:final\s+|abstract\s+|sealed\s+)*class\s+(\w*Adapter)\b", re.M)
-DEF_RE = re.compile(r"^[ \t]*(?:override\s+|private\s+|protected\s+|final\s+)*def\s+(\w+)\s*[\[\(]", re.M)
+ADAPTER_CLASS_RE = re.compile(r"^\s*(?:final\s+|abstract\s+|sealed\s+)*class\s+(\w*Adapter)\b", re.MULTILINE)
+DEF_RE = re.compile(r"^[ \t]*(?:override\s+|private\s+|protected\s+|final\s+)*def\s+(\w+)\s*[\[\(]", re.MULTILINE)
 
 
 # iter-2: types that indicate a direct downstream-service call. If the method body
@@ -628,7 +625,7 @@ BROKEN_INTERP_CONTEXT_RE = re.compile(
     r"Exception|RuntimeException|throw\s+new|require\s*\(|assert\s*\(|"
     r"\.error\s*\(|\.warn\s*\(|\.info\s*\(|\.debug\s*\(|\.trace\s*\(|"
     r"message\s*=)\b",
-    re.I,
+    re.IGNORECASE,
 )
 
 
@@ -773,7 +770,7 @@ def discover_yaml_rules(rules_dir: Path) -> list[Path]:
                 head = p.read_text(errors="replace")[:4000]
             except OSError:
                 continue
-            if re.search(r"^\s*rules\s*:", head, re.M):
+            if re.search(r"^\s*rules\s*:", head, re.MULTILINE):
                 seen.add(r)
                 out.append(p)
     return out
@@ -785,7 +782,7 @@ def _yaml_rule_ids(yaml_path: Path) -> list[str]:
         txt = yaml_path.read_text(errors="replace")
     except OSError:
         return []
-    return re.findall(r"^\s*-\s*id\s*:\s*([\w\-.]+)\s*$", txt, re.M)
+    return re.findall(r"^\s*-\s*id\s*:\s*([\w\-.]+)\s*$", txt, re.MULTILINE)
 
 
 def run_semgrep_yaml(
@@ -804,7 +801,7 @@ def run_semgrep_yaml(
             cmd.extend(["--include", pat])
         try:
             proc = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=600,
+                cmd, capture_output=True, text=True, timeout=600, check=False,
             )
         except FileNotFoundError:
             print(f"[scan] semgrep binary not found at {semgrep_bin}", file=sys.stderr)
@@ -1247,7 +1244,7 @@ def run_regex_emulator(
 SBT_DIAG_RE = re.compile(
     r"^\[(?:warn|error)\]\s+(?P<path>\S+\.scala):(?P<line>\d+):(?P<col>\d+):\s+"
     r"(?:error|warning):\s+\[(?P<rule>[\w-]+)(?:\.[\w-]+)?\]\s+(?P<msg>.*)$",
-    re.M,
+    re.MULTILINE,
 )
 
 
@@ -1279,6 +1276,7 @@ def _publish_rules_locally(sbt_project: Path, sbt_timeout: int) -> bool:
             capture_output=True,
             text=True,
             timeout=sbt_timeout,
+            check=False,
         )
     except FileNotFoundError:
         print("[scan] sbt not on PATH — cannot run --use-sbt", file=sys.stderr)
@@ -1376,7 +1374,7 @@ def run_sbt_scalafix(
     try:
         proc = subprocess.run(
             cmd, cwd=str(sbt_project), capture_output=True, text=True,
-            timeout=sbt_timeout,
+            timeout=sbt_timeout, check=False,
         )
     except subprocess.TimeoutExpired:
         print(f"[scan] sbt scalafix timed out after {sbt_timeout}s",
@@ -1409,7 +1407,7 @@ def run_sbt_scalafix(
         snippet = ""
         for j in range(i + 1, min(len(lines), i + 4)):
             cand = lines[j].strip()
-            if cand.startswith("[error]") or cand.startswith("[warn]"):
+            if cand.startswith(("[error]", "[warn]")):
                 body = cand.split("]", 1)[1].strip() if "]" in cand else cand
                 # Skip caret-only lines
                 if body and not set(body) <= set("^ "):
@@ -1464,7 +1462,7 @@ def run_deep_prefilter(
             cmd.extend(["--glob", pat])
         cmd.append(str(repo))
         try:
-            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=60, check=False)
         except (FileNotFoundError, subprocess.TimeoutExpired):
             continue
         for line in proc.stdout.splitlines():
@@ -1683,7 +1681,7 @@ def main(argv: list[str] | None = None) -> int:
     for rid in yaml_rule_names:
         summary["by_rule"].setdefault(rid, 0)
     report = {
-        "scanned_at": _dt.datetime.utcnow().isoformat() + "Z",
+        "scanned_at": _dt.datetime.now(_dt.UTC).isoformat().replace("+00:00", "Z"),
         "repo": str(repo),
         "rules_run": [r.name for r in rules] + yaml_rule_names,
         "rule_meta": [

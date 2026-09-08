@@ -64,9 +64,7 @@ class JiraPRMiner:
                     key=issue.key,
                     summary=issue.fields.summary or "",
                     description=issue.fields.description or "",
-                    resolved_at=datetime.fromisoformat(
-                        issue.fields.resolutiondate.replace("Z", "+00:00")
-                    ),
+                    resolved_at=datetime.fromisoformat(issue.fields.resolutiondate),
                     labels=list(issue.fields.labels or []),
                     components=[c.name for c in (issue.fields.components or [])],
                     severity=getattr(issue.fields, "priority", None) and issue.fields.priority.name,
@@ -129,9 +127,8 @@ class JiraPRMiner:
         body = (pr.title or "") + " " + (pr.body or "")
         if bug_key not in body and not any(
             bug_key in c.commit.message for c in pr.get_commits()
-        ):
-            if not self.ticket_re.search(body):
-                return None
+        ) and not self.ticket_re.search(body):
+            return None
 
         fix_shas = [c.sha for c in pr.get_commits()]
         diff = self._fetch_pr_diff(repo, pr_number)

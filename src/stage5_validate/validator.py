@@ -110,6 +110,7 @@ class Validator:
             capture_output=True,
             text=True,
             timeout=180,
+            check=False,
         )
         if result.returncode != 0:
             return False, f"sbt compile failed:\n{result.stderr[-1500:]}"
@@ -135,6 +136,7 @@ class Validator:
             capture_output=True,
             text=True,
             timeout=300,
+            check=False,
         )
         return 1.0 if result.returncode == 0 else 0.0
 
@@ -149,7 +151,7 @@ class Validator:
             snippet_path.write_text(entry.buggy_code)
             result = subprocess.run(
                 ["scalafix", "--rules", rule.rule_id, "--check", str(snippet_path)],
-                cwd=template_root, capture_output=True, text=True, timeout=30,
+                cwd=template_root, capture_output=True, text=True, timeout=30, check=False,
             )
             # Scalafix exits non-zero when a rule fires and --check is set
             if result.returncode != 0:
@@ -209,7 +211,7 @@ class Validator:
     def _opengrep_matches(rule_path: Path, target: Path) -> bool:
         result = subprocess.run(
             ["opengrep", "scan", "--config", str(rule_path), "--json", str(target)],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True, text=True, timeout=30, check=False,
         )
         if result.returncode not in (0, 1):     # 1 = findings present, fine for our purposes
             return False

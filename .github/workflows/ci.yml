@@ -12,11 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-      - run: pip install ruff
-      - run: ruff check src scripts
+      - uses: astral-sh/setup-uv@v10.0.1
+      # `make lint` pins ruff to the exact version in pyproject.toml, so CI runs
+      # the same command and the same linter a contributor runs locally.
+      - run: make lint
 
   test:
     runs-on: ubuntu-latest
@@ -44,3 +43,25 @@ jobs:
           ! rg -n 'AKIA[0-9A-Z]{16}|ghp_[a-zA-Z0-9]{20,}|sk-[a-zA-Z0-9]{20,}' \
             --glob '!out/**' --glob '!.venv/**' --glob '!node_modules/**' || \
             (echo "Potential secret found" && exit 1)
+
+  # Aggregate gate. The branch ruleset requires exactly one context -- `CI` --
+  # and this job is it. Keep `needs` in sync with the jobs above; the ruleset
+  # never needs to change again.
+  CI:
+    if: always()
+    needs: [lint, test, agent-check, secret-scan]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every upstream job to have succeeded
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          set -euo pipefail
+          echo "upstream results: $RESULTS"
+          for r in $RESULTS; do
+            if [ "$r" != "success" ]; then
+              echo "::error::a required job finished with '$r'"
+              exit 1
+            fi
+          done
+          echo "All required jobs succeeded."

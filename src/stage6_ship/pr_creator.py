@@ -16,6 +16,7 @@ Human review is REQUIRED. We never auto-merge rules.
 
 from __future__ import annotations
 
+import contextlib
 
 from github import Github
 from rich.console import Console
@@ -65,10 +66,9 @@ class PRShipper:
         # Branch off main
         main = repo.get_branch("main")
         branch_name = f"{self.branch_prefix}/{rule.rule_id}"
-        try:
+        # The branch may already exist from a prior run.
+        with contextlib.suppress(Exception):
             repo.create_git_ref(ref=f"refs/heads/{branch_name}", sha=main.commit.sha)
-        except Exception:
-            pass    # branch may already exist from a prior run
 
         if rule.target == "scalafix":
             self._add_scalafix_files(repo, branch_name, rule)
@@ -82,10 +82,8 @@ class PRShipper:
             head=branch_name,
             base="main",
         )
-        try:
+        with contextlib.suppress(Exception):
             pr.add_to_assignees(self.review_team.split("/")[-1])
-        except Exception:
-            pass
         pr.add_to_labels("auto-generated", "needs-review")
         return pr.html_url
 

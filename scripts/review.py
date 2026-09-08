@@ -97,7 +97,7 @@ def run_scan(repo_path: Path, scan_json: Path, paths: list[str] | None = None) -
     ]
     for p in paths or []:
         cmd.extend(["--paths", p])
-    proc = subprocess.run(cmd, capture_output=True, text=True)
+    proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
     if proc.returncode != 0:
         sys.stderr.write(proc.stdout + proc.stderr)
         raise SystemExit(f"scan failed: {proc.returncode}")
@@ -193,7 +193,8 @@ def main():
                     help="for --snippet-text (scala/ts/tsx/js)")
     ap.add_argument(
         "--output", type=Path,
-        default=PROJECT_ROOT / "out" / "review" / _dt.datetime.now().strftime("%Y%m%d_%H%M%S"),
+        default=PROJECT_ROOT / "out" / "review"
+        / _dt.datetime.now(_dt.UTC).strftime("%Y%m%d_%H%M%S"),
     )
     args = ap.parse_args()
 
@@ -241,7 +242,7 @@ def main():
         # 1) fetch the PR diff (text) to learn added-line ranges per file
         diff_proc = subprocess.run(
             ["gh", "pr", "diff", pr_num, "--repo", args.repo],
-            capture_output=True, text=True,
+            capture_output=True, text=True, check=False,
         )
         if diff_proc.returncode != 0:
             raise SystemExit(f"gh pr diff failed: {diff_proc.stderr}")
@@ -266,7 +267,7 @@ def main():
         proc = subprocess.run(
             ["gh", "pr", "view", pr_num, "--repo", args.repo,
              "--json", "files"],
-            capture_output=True, text=True,
+            capture_output=True, text=True, check=False,
         )
         if proc.returncode != 0:
             raise SystemExit(f"gh pr view failed: {proc.stderr}")
@@ -276,7 +277,7 @@ def main():
             content_proc = subprocess.run(
                 ["gh", "api", f"repos/{args.repo}/contents/{path}",
                  "--jq", ".content"],
-                capture_output=True, text=True,
+                capture_output=True, text=True, check=False,
             )
             if content_proc.returncode != 0:
                 continue
@@ -347,8 +348,7 @@ def main():
         index.append("\n## 0 findings\n")
         index.append("No known anti-patterns detected in the scanned input.")
         index.append("\nRules attempted (none fired):")
-        for k in sorted(summary["by_rule"].keys()):
-            index.append(f"- `{k}`")
+        index.extend(f"- `{k}`" for k in sorted(summary["by_rule"].keys()))
         index.append("")
         index.append("This is the expected outcome for code that follows the patterns.")
     else:
@@ -357,8 +357,7 @@ def main():
             if v:
                 index.append(f"- **{k}**: {v}")
         index.append("\n## Bundles to review (in order)\n")
-        for p in bundle_paths:
-            index.append(f"- `{Path(p).relative_to(out_dir)}`")
+        index.extend(f"- `{Path(p).relative_to(out_dir)}`" for p in bundle_paths)
     (out_dir / "INDEX.md").write_text("\n".join(index))
 
     # iter-24: terse one-line summary on stdout, after the path, so callers see

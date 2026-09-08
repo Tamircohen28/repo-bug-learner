@@ -56,8 +56,7 @@ STOPWORDS = {
     "show", "shows", "shown", "showing", "hide", "hides", "hidden",
     "open", "opened", "opens", "close", "closed", "closes", "closing",
     "send", "sends", "sent", "sending", "receive", "received",
-    "todo", "draftpr", "drafts", "draft",
-    "click", "clicks", "clicked", "tap", "tapped", "press", "pressed",
+    "todo", "draftpr", "drafts", "click", "clicks", "clicked", "tap", "tapped", "press", "pressed",
     "screen", "screens", "page", "pages", "view", "views", "viewed",
     "back", "front", "main", "secondary", "primary",
 }
@@ -92,8 +91,8 @@ def tokenize(text: str) -> list[str]:
 def load_corpus(path: Path) -> list[dict]:
     entries = []
     with path.open() as f:
-        for line in f:
-            line = line.strip()
+        for raw_line in f:
+            line = raw_line.strip()
             if not line:
                 continue
             try:
@@ -249,8 +248,8 @@ def main() -> None:
 
     lines = ["# Cross-repo patterns",
              "",
-             f"_{repo_a_name} unique summaries: {sched_total}; "
-             f"{repo_b_name} unique summaries: {mob_total}._",
+             (f"_{repo_a_name} unique summaries: {sched_total}; "
+             f"{repo_b_name} unique summaries: {mob_total}._"),
              f"_Candidate cross-repo tokens: {len(candidates)}_",
              ""]
 

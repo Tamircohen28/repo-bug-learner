@@ -1,12 +1,17 @@
-.PHONY: help install update uninstall test lint clean schema precision \
+.PHONY: help install update uninstall test lint lint-fix clean schema precision \
 	agent\:check agent-polish-gate repo-standards-gate assert-contract \
 	check-agent-drift check-feature-equivalence check-platform-targets \
 	platform-targets-sync platform-targets-assert
 
 TAMIRS_CONTRACT ?= $(HOME)/Projects/tamirs-superpowers/skills/repo/_contract
 
+# Single source of truth for the linter version: the exact pin in pyproject.toml's
+# dev extra. `make lint` and CI both run this exact binary, so a new ruff release
+# cannot turn CI red on a repo that has not changed.
+RUFF_VERSION := $(shell sed -n 's/.*"ruff==\([0-9][0-9.]*\)".*/\1/p' pyproject.toml)
+
 help:
-	@echo "install update uninstall test lint agent:check agent-polish-gate repo-standards-gate"
+	@echo "install update uninstall test lint lint-fix agent:check agent-polish-gate repo-standards-gate"
 
 install:
 	uv sync --extra dev
@@ -54,7 +59,10 @@ precision:
 	.venv/bin/python scripts/precision_check.py
 
 lint:
-	.venv/bin/ruff check src scripts
+	uvx ruff@$(RUFF_VERSION) check src scripts
+
+lint-fix:
+	uvx ruff@$(RUFF_VERSION) check --fix src scripts
 
 clean:
 	rm -rf .venv

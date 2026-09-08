@@ -58,10 +58,7 @@ MAX_FILE_DIFF_BYTES = 50 * 1024
 def is_fix_title(title: str) -> bool:
     if JIRA_KEY_RE.search(title):
         return True
-    for pat in FIX_TITLE_PATTERNS:
-        if pat.search(title):
-            return True
-    return False
+    return any(pat.search(title) for pat in FIX_TITLE_PATTERNS)
 
 
 def extract_jira_labels(*texts: str) -> list[str]:
@@ -117,8 +114,7 @@ def parse_unified_diff(diff_text: str) -> list[dict]:
         if line.startswith("+++ "):
             # `+++ b/path/to/file` or `+++ /dev/null`
             p = line[4:].strip()
-            if p.startswith("b/"):
-                p = p[2:]
+            p = p.removeprefix("b/")
             if p != "/dev/null":
                 cur["path"] = p
             i += 1
@@ -127,8 +123,7 @@ def parse_unified_diff(diff_text: str) -> list[dict]:
             # `--- a/path/to/file` — fall back to this if +++ was /dev/null
             if cur.get("path") is None:
                 p = line[4:].strip()
-                if p.startswith("a/"):
-                    p = p[2:]
+                p = p.removeprefix("a/")
                 if p != "/dev/null":
                     cur["path"] = p
             i += 1
@@ -168,11 +163,12 @@ def gh_run(args: list[str], timeout: int = 90) -> tuple[int, str, str]:
             capture_output=True,
             text=True,
             timeout=timeout,
+            check=False,
         )
         return proc.returncode, proc.stdout, proc.stderr
     except subprocess.TimeoutExpired:
         return 124, "", "timeout"
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return 1, "", str(e)
 
 
@@ -197,7 +193,7 @@ def fetch_pr_list(repo: str, since: str, limit: int) -> list[dict]:
 
 
 def fetch_pr_diff(repo: str, number: int) -> str | None:
-    code, out, err = gh_run(
+    code, out, _err = gh_run(
         ["gh", "pr", "diff", str(number), "--repo", repo, "--patch"],
         timeout=120,
     )
@@ -219,14 +215,14 @@ def load_existing_keys(path: Path) -> set[tuple[str, str]]:
     if not path.exists():
         return keys
     with path.open() as f:
-        for line in f:
-            line = line.strip()
+        for raw_line in f:
+            line = raw_line.strip()
             if not line:
                 continue
             try:
                 rec = json.loads(line)
                 keys.add((rec.get("bug_key", ""), rec.get("file_path", "")))
-            except Exception:  # noqa: BLE001
+            except Exception:
                 continue
     return keys
 
@@ -338,7 +334,7 @@ def main() -> int:
                     pr = fut_to_pr[fut]
                     try:
                         diff_text = fut.result()
-                    except Exception:  # noqa: BLE001
+                    except Exception:
                         diff_text = None
                     if not diff_text:
                         prs_diff_failed += 1
