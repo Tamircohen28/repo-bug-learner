@@ -82,6 +82,11 @@ scan() {
     while IFS= read -r line; do
       n=$((n + 1))
       case "$line" in *action-pin-ok:*) continue ;; esac
+      # A whole-line comment is prose, not configuration. Stripping the trailing
+      # `#...` is not enough: a line that *begins* with `#` still matches
+      # `*container:*`, so the checker flagged the comment explaining why a
+      # container had been removed. Found by running it on that very commit.
+      case "${line#"${line%%[![:space:]]*}"}" in '#'*) continue ;; esac
       # `uses:` / `container:` / `image:` value, quotes and inline comment stripped.
       case "$line" in
         *uses:*)      ref="${line#*uses:}";      kind=uses  ;;
@@ -146,6 +151,8 @@ jobs:
     services:
       db:
         image: postgres:16
+  # A comment naming `container: commented/img:latest` is prose about a change,
+  # not a job that pulls anything.
 YML
   out="$(scan "$tmp/bad")"
   [ "$(printf '%s\n' "$out" | grep -c 'checkout@v7')" = 1 ] \
@@ -164,6 +171,8 @@ YML
     || { echo "  self-test: digest-pinned container wrongly flagged" >&2; rc=1; }
   [ "$(printf '%s\n' "$out" | grep -c 'postgres:16')" = 1 ] \
     || { echo "  self-test: services.*.image: not caught" >&2; rc=1; }
+  [ "$(printf '%s\n' "$out" | grep -c 'commented/img')" = 0 ] \
+    || { echo "  self-test: comment line wrongly flagged" >&2; rc=1; }
 
   cat > "$tmp/good/w.yml" <<'YML'
 jobs:

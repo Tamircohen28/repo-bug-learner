@@ -111,7 +111,9 @@ See [docs/CHANGELOG.md](docs/CHANGELOG.md) for full history.
   started. The template now runs on `ubuntu-latest` and installs the `v1.30.0`
   release binary, verified against a recorded SHA-256 before it is made executable,
   so a moved or replaced asset fails the checksum rather than executing beside a
-  `security-events: write` token.
+  `security-events: write` token. The job then asserts that `opengrep --version`
+  reports the version it pinned, because a version written into a workflow is a
+  claim about what will run, not a test that it did.
 - `scripts/check-action-pinning.sh` now reads `container:` and `services.*.image:`
   in addition to `uses:`, and requires an image digest (`name@sha256:<64 hex>`).
   Both keys pull a registry image that runs with the job's own permissions, and
