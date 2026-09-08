@@ -11,6 +11,14 @@ All notable changes to this project will be documented in this file.
   PRs. The rule set is now declared explicitly in `[tool.ruff.lint]`, the version is
   pinned in the `dev` extra, and CI runs the documented `make lint` target rather than
   a divergent inline command.
+- The test venv is built on a Python that meets the declared floor. `pyproject`
+  requires `>=3.11`, but `make test`/`make precision` ran `python -m venv .venv`
+  against ambient `python` — 3.10.4 on a pyenv machine, below the floor, silently.
+  The Makefile now selects the first interpreter that clears 3.11 (override with
+  `make test PYTHON=...`) and fails with a clear message when there is none, instead
+  of the old `2>/dev/null || true` that surfaced as `no such file: .venv/bin/python`.
+- `actions/setup-python` v6 -> v7 in `regression-tests.yml`. The bump landed in
+  `ci.yml` only, so the other workflow was left behind.
 
 ### Changed
 
@@ -24,6 +32,14 @@ All notable changes to this project will be documented in this file.
 - Vendored contract check scripts refreshed from `tamirs-superpowers@3.6.1` (were
   1.6.1). The newer `check-platform-targets.sh` cross-checks the capability registry,
   so each entry in `platform-targets.json` now names the platform that owns it.
+- CI runs the test job as a `3.11 / 3.12 / 3.13` matrix with `fail-fast: false`.
+  Only 3.12 was ever exercised, so both ends of the supported range were untested.
+  The legs roll up into the existing `CI` fan-in job, so the branch ruleset is
+  unchanged.
+- `ci.yml` and `regression-tests.yml` declare a `concurrency` group with
+  `cancel-in-progress`, so a force-push stops racing its own superseded run for the
+  required `CI` context. `release.yml` is deliberately excluded — cancelling a
+  half-finished release is worse than a duplicate run.
 
 ### Added
 
