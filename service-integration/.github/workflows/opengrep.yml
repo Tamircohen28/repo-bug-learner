@@ -17,14 +17,14 @@ jobs:
     runs-on: ubuntu-latest
     container: opengrep/opengrep:latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
 
       # Pull the rules repo. The rules repo's auto-generated PRs from
       # repo-bug-learner deploy here on merge.
       - name: Checkout rules repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: ${{ vars.RULES_REPO }}
           path: analysis-rules
@@ -43,7 +43,7 @@ jobs:
 
       # Upload findings to GitHub Code Scanning (Security tab + PR review surface)
       - name: Upload SARIF
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@6f5948dfacef28e207b48d0905cf90c03365536d # v3.37.9
         if: always()
         with:
           sarif_file: opengrep.sarif
