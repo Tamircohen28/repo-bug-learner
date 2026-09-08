@@ -15,6 +15,9 @@ jobs:
   opengrep:
     name: Opengrep (custom rules)
     runs-on: ubuntu-latest
+    env:
+      OPENGREP_VERSION: v1.30.0
+      OPENGREP_SHA256: 35779bdd72e92129c8df2a77f0c55e8c08356801ea92591ef32108d6b28d564c
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -30,9 +33,6 @@ jobs:
       # tag alone cannot decide what executes. A moved or replaced asset fails
       # `sha256sum --check` here rather than silently running something else.
       - name: Install Opengrep
-        env:
-          OPENGREP_VERSION: v1.30.0
-          OPENGREP_SHA256: 35779bdd72e92129c8df2a77f0c55e8c08356801ea92591ef32108d6b28d564c
         run: |
           set -euo pipefail
           mkdir -p "$HOME/.local/bin"
@@ -43,11 +43,20 @@ jobs:
           chmod +x "$HOME/.local/bin/opengrep"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
-      - name: Assert the pinned binary is the one on PATH
+      # A version written into a workflow is a claim about what will run, not a
+      # test that it did. Ask the binary. Without this the job would still be
+      # green if the download landed somewhere else on PATH, or if the asset
+      # under this tag were ever rebuilt from other sources.
+      - name: Assert this job runs the Opengrep it pinned
         run: |
           set -euo pipefail
           command -v opengrep
-          opengrep --version
+          actual="$(opengrep --version)"
+          if [ "$actual" != "${OPENGREP_VERSION#v}" ]; then
+            echo "::error::opengrep on PATH reports $actual but this job pins ${OPENGREP_VERSION}"
+            exit 1
+          fi
+          echo "running Opengrep $actual"
 
       # Pull the rules repo. The rules repo's auto-generated PRs from
       # repo-bug-learner deploy here on merge.
