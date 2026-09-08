@@ -39,7 +39,12 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
-      - run: make test
+      # PYTHON is passed explicitly. Without it the Makefile probes PATH for
+      # python3.13, python3.12, python3.11 in that order, and ubuntu-latest ships
+      # /usr/bin/python3.12 -- so the 3.11 leg built a 3.12 venv and reported green
+      # for a version it never ran. setup-python's `python` shim is this leg's
+      # interpreter by construction.
+      - run: make test PYTHON="$(command -v python)"
       # The matrix is only a real matrix if each leg actually runs its own
       # version. `make test` picks its interpreter by probing PATH for python3.13,
       # 3.12, 3.11 in that order, so without this the leg's verdict is decided by
