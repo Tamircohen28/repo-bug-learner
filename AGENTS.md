@@ -20,7 +20,8 @@ make uninstall # remove venv + caches
 make test      # precision check + regression scan + pytest
 make lint      # ruff check src scripts
 make precision # precision_check.py (semgrep)
-make agent:check           # drift + feature equivalence + platform targets
+make agent:check           # drift + feature equivalence + platform targets + skill bridge
+make skill-bridge          # regenerate .claude/skills from canonical .agents/skills
 make repo-standards-gate   # agent polish + contract assert (pre-PR)
 make schema    # initialize DB schema
 docker compose up -d   # Postgres + pgvector
@@ -67,6 +68,7 @@ python -m src.orchestrator batch --repo backend --since 2024-01-01
 | `rule-validator/` | Scalafix rule harness + Opengrep YAML |
 | `scripts/scan_repo.py` | Fast repo scanner + review backend |
 | `config/config.example.toml` | Configuration template |
+| `core/capabilities/platforms.json` | What each supported agent surface can do |
 
 ## Versioning
 
