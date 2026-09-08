@@ -230,7 +230,7 @@ def _process_commit(commit: dict) -> list[dict]:
             "file_path": fpath,
             "language": lang,
             "buggy_code": buggy,
-            "fix_diff": fdiff,
+            "fix_diff": capped,
             "bug_summary": subject,
             "jira_labels": jira_labels,
             "szz_confidence": 1.0,
