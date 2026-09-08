@@ -7,6 +7,14 @@ on:
     branches: [main, master]
   workflow_dispatch:
 
+# One in-flight run per branch. A force-push used to leave the superseded run
+# racing the new one for the same `CI` context, so the ruleset could see a stale
+# result. Release is deliberately excluded -- cancelling a half-done release is
+# worse than paying for a duplicate run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -17,13 +25,20 @@ jobs:
       # the same command and the same linter a contributor runs locally.
       - run: make lint
 
+  # pyproject declares requires-python = ">=3.11" but CI only ever ran 3.12, so the
+  # floor and the ceiling were both untested. fail-fast is off so one bad version
+  # reports as one red leg instead of hiding the others.
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version: '3.12'
+          python-version: ${{ matrix.python-version }}
       - run: make test
 
   agent-check:
