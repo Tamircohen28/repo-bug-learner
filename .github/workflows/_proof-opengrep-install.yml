@@ -20,16 +20,16 @@ jobs:
           set -euo pipefail
           python3 - <<'PY'
           import os, yaml
-          wf = yaml.safe_load(open("service-integration/.github/workflows/opengrep.yml"))
-          steps = {s.get("name"): s for s in wf["jobs"]["opengrep"]["steps"] if s.get("name")}
+          job = yaml.safe_load(open("service-integration/.github/workflows/opengrep.yml"))["jobs"]["opengrep"]
+          steps = {s.get("name"): s for s in job["steps"] if s.get("name")}
           for name, out in (("Install Opengrep", "step-install.sh"),
-                            ("Assert the pinned binary is the one on PATH", "step-assert.sh")):
+                            ("Assert this job runs the Opengrep it pinned", "step-assert.sh")):
               open(out, "w").write(steps[name]["run"])
               print(f"extracted {name!r} -> {out}")
           with open(os.environ["GITHUB_ENV"], "a") as fh:
-              for k, v in steps["Install Opengrep"].get("env", {}).items():
+              for k, v in job["env"].items():
                   print(f"{k}={v}", file=fh)
-                  print(f"env {k}={v}")
+                  print(f"job env {k}={v}")
           PY
 
       - name: Run the template's install step verbatim
@@ -38,12 +38,22 @@ jobs:
       - name: Run the template's assertion step verbatim
         run: bash step-assert.sh
 
-      # The checksum is the whole point, so prove it is load-bearing: a wrong
-      # digest must stop the job rather than warn.
+      # Both guards below are the point of the change, so neither is taken on
+      # faith: an assertion nobody has seen fail is not known to assert anything.
+      - name: A pinned version the binary does not report must fail
+        env:
+          OPENGREP_VERSION: v9.99.99
+        run: |
+          set -euo pipefail
+          if bash step-assert.sh; then
+            echo "::error::assertion step passed against a version opengrep does not report"
+            exit 1
+          fi
+          echo "assertion step rejected the wrong version, as it must"
+
       - name: A wrong checksum must fail the install step
         env:
-          OPENGREP_VERSION: v1.30.0
-          OPENGREP_SHA256: 0000000000000000000000000000000000000000000000000000000000000000
+          OPENGREP_SHA256: '0000000000000000000000000000000000000000000000000000000000000000'
         run: |
           set -euo pipefail
           if bash step-install.sh; then
