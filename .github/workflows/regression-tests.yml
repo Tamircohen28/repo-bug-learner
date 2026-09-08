@@ -44,8 +44,12 @@ jobs:
       # and both times only the Makefile was fixed. `make test` is the single
       # definition of this suite: it builds the venv, installs the pinned semgrep,
       # then runs precision_check.py, test_scan_repo_paths.py and pytest.
+      #
+      # PYTHON is passed explicitly. Without it the Makefile probes PATH for
+      # python3.13, python3.12, python3.11 in that order, which would gate this job
+      # on whatever the runner image ships rather than on the version it pins.
       - name: Regression suite + precision corpora
-        run: make test
+        run: make test PYTHON="$(command -v python)"
 
       # The pin above is the entire reason this job is separate from the CI matrix,
       # so check it rather than trust it. The Makefile picks its interpreter by
