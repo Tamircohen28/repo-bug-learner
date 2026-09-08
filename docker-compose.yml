@@ -1,6 +1,15 @@
 services:
   postgres:
-    image: pgvector/pgvector:pg17
+    # Waived, not pinned, on evidence: no workflow and no Makefile target starts
+    # this compose file. Every reference to it in the repo is human instruction
+    # (README, AGENTS.md, docs/user/*, and a Prerequisites comment in
+    # scripts/bootstrap.sh), no workflow declares `services:` or `container:` at
+    # all, and nothing here ever holds a GitHub token. A digest pin would freeze
+    # every developer's Postgres at one patch release until somebody remembered
+    # to bump it, and buy nothing. The waiver is on the line with its reason
+    # because the checker now walks the whole tree: a path-shaped carve-out is
+    # how the mutable ref creeps back into a job that DOES hold the token.
+    image: pgvector/pgvector:pg17  # action-pin-ok: local dev compose, never started in CI, holds no token
     container_name: rbl-postgres
     environment:
       POSTGRES_USER: rbl

@@ -4,6 +4,19 @@ See [docs/CHANGELOG.md](docs/CHANGELOG.md) for full history.
 
 ## [Unreleased]
 
+### Changed
+
+- `docker-compose.yml`'s `pgvector/pgvector:pg17` now carries an explicit
+  `action-pin-ok:` waiver. The whole-tree pinning scan reaches it, so it had to be
+  settled rather than discovered in CI. It was settled on evidence: no workflow and
+  no Makefile target starts this compose file — every reference is human instruction
+  (`README.md`, `AGENTS.md`, `docs/user/*`, and a Prerequisites comment in
+  `scripts/bootstrap.sh`), and no workflow declares `services:` or `container:` at
+  all. It is a developer's local database that never holds a GitHub token, and a
+  digest pin would freeze every developer's Postgres at one patch release for no
+  security gain. Waived by comment, on the line, with the reason: a path-shaped
+  carve-out is how the mutable ref creeps back into a job that *does* hold the token.
+
 ### Removed
 
 - `.github/workflows/regression-tests.yml`. After it was changed to call `make test`,
@@ -17,6 +30,64 @@ See [docs/CHANGELOG.md](docs/CHANGELOG.md) for full history.
 
 ### Fixed
 
+- `scripts/check-action-pinning.sh` decided its verdict by where it looked. Six
+  defects, all of which let it print "all action refs are SHA-pinned" over a tree
+  that had unpinned ones:
+  - It scanned two enumerated roots, `.github/workflows` and
+    `service-integration/.github/workflows`. A list of places to look is only as
+    complete as the memory of whoever wrote it; in the sibling copy of this script
+    that same omission hid 18 mutable refs in a scaffold-templates directory. It now
+    walks the whole repository — every `*.yml`, `*.yaml`, `*.tmpl` and `*.md`, with
+    `.git`, `node_modules` and `.venv` pruned. `.tmpl` because a scaffold template is
+    a workflow before it is rendered.
+  - `uses:` was matched as a substring anywhere on the line, so the sentence
+    `**Common errors and their causes:**` parsed as a step named `ca-uses:` and was
+    reported as an unpinned ref. `uses:`, `container:` and `image:` are now matched as
+    YAML keys that begin the line, after an optional sequence dash — which also stops
+    `runner-image:` from being read as `image:`.
+  - Once `.md` came into scope, prose *about* a mutable ref read as a mutable ref: a
+    changelog entry explaining that `uses: actions/checkout@v7` names a movable tag
+    was itself reported. In Markdown only, fenced-code delimiters are now tracked and
+    lines outside a fence are treated as prose. (This very entry is the fixture.)
+
+  - `action-pin-ok:` was itself matched as a substring anywhere on the line, so an
+    action or image whose *name* carries the token — `uses: owner/action-pin-ok@v1`,
+    `container: owner/action-pin-ok:latest` — waived itself and was never reported.
+    Only the text after the first `#` can waive now. The waiver was the one thing
+    left that a hostile or merely unlucky name could turn off.
+
+  - The self-test could not see the scan root at all. Every assertion called
+    `scan()` directly, so reverting the top-level `scan "."` back to the two
+    enumerated roots left the whole suite green — the coverage bug was invisible to
+    the tests written to catch coverage bugs. There is now an end-to-end case that
+    re-invokes the script against a planted tree whose only unpinned ref lives
+    outside `.github` and requires exit 1 exactly. Two trees, because this copy has
+    two detectors: one plants a `uses:` in `templates/`, the other a `container:` in
+    `deploy/`, so neither is covered by accident. It runs under `bash`, not `sh` —
+    the script uses process substitution, and a syntax-error exit must never read as
+    a finding — and the exit code is compared to 1 rather than tested with `if`,
+    because exit 2 is a usage error.
+
+  - The `docker://` branch printed a finding *unconditionally*, before any digest
+    handling, and every finding exits 1 — so
+    `uses: docker://ghcr.io/owner/img@sha256:<64 hex>`, already immutably pinned,
+    failed the check and was told to pin by digest. This header called `docker://`
+    "reported, not failed" from #18 onward, which was never true of the code. A
+    docker ref is now routed through a real digest test (`@sha256:` plus exactly 64
+    lowercase hex), and the header records the rule instead of the wish. This was
+    the second of three defects inside the exemption path, which is under-tested by
+    nature: its job is to make findings disappear, so a bug there is silent. A gate
+    whose own remedy does not clear it is what drives someone to add the
+    path-shaped carve-out the header warns about two lines later.
+
+  The self-test now carries a case for each: an unfenced `uses:` in prose that must
+  not be reported, a fenced one that must be, a `causes:` inside a `run:` that must
+  not be, a `.yml.tmpl` that must be, a ref whose own name contains
+  `action-pin-ok` that must be, a planted tree that must fail from outside
+  `.github`, a digest-pinned `docker://` ref that must NOT be reported, and a
+  truncated `@sha256:abc123` that must be. Each fix was reverted in a scratch copy and
+  the self-test confirmed to go red with a distinct message, because a self-test that
+  still passes with the fix reverted is asserting nothing.
 - The CI Python matrix now tests the versions it names. `make test` picks its
   interpreter by probing `PATH` for `python3.13`, `python3.12`, `python3.11` in that
   order, and `ubuntu-latest` ships `/usr/bin/python3.12` — so the `3.11` leg built a
