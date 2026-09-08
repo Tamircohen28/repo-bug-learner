@@ -1,6 +1,7 @@
 .PHONY: help install update uninstall test lint lint-fix clean schema precision \
 	agent\:check agent-polish-gate repo-standards-gate assert-contract \
 	check-agent-drift check-feature-equivalence check-platform-targets \
+	check-action-pinning \
 	skill-bridge skill-bridge-check \
 	platform-targets-sync platform-targets-assert
 
@@ -38,7 +39,7 @@ uninstall:
 	$(MAKE) clean
 
 agent\:check: check-agent-drift check-feature-equivalence check-platform-targets \
-	skill-bridge-check
+	check-action-pinning skill-bridge-check
 
 check-agent-drift:
 	bash scripts/check-agent-drift.sh .
@@ -48,6 +49,14 @@ check-feature-equivalence:
 
 check-platform-targets:
 	bash scripts/check-platform-targets.sh .
+
+# A movable tag (`@v7`) is the action owner's write access to our CI, and to every
+# service repo that copies service-integration/. --self-test is not optional: it
+# builds a violating workflow and its corrected twin and asserts the detector
+# fires on one and stays quiet on the other, so a check that has quietly stopped
+# checking fails loudly instead of passing.
+check-action-pinning:
+	bash scripts/check-action-pinning.sh . --self-test
 
 skill-bridge:
 	bash scripts/sync-skill-bridge.sh .
