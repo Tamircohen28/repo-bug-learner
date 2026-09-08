@@ -211,10 +211,40 @@ PROVIDED = {"native", "native-experimental", "partial", "emulated", "adapter"}
 
 problems = []
 changed = False
-for key in d.get("supported_targets", []):
+
+# supported_targets is the list this function iterates. Absent or malformed, the loop
+# below runs zero times and the check reports success without having compared anything
+# — the "passes because it could not check" failure this registry exists to prevent.
+# An unusable declaration is an error, never an empty iteration.
+supported = d.get("supported_targets")
+if supported is None:
+    problems.append(
+        "platform-targets.json declares no supported_targets, so the capability mirror "
+        "cannot be derived and this check would pass without comparing anything"
+    )
+    supported = []
+elif not isinstance(supported, list):
+    problems.append(
+        "platform-targets.json supported_targets must be a list, got "
+        f"{type(supported).__name__}"
+    )
+    supported = []
+
+for key in supported:
     t = d.get("targets", {}).get(key)
     plat = reg.get("platforms", {}).get(key)
-    if t is None or plat is None:
+    # A declared target missing from either side is a broken declaration, not a target to
+    # skip quietly. Skipping is precisely how a supported surface loses its mirror while
+    # everything stays green.
+    if t is None:
+        problems.append(
+            f"supported_targets names '{key}', but targets.{key} is not in platform-targets.json"
+        )
+        continue
+    if plat is None:
+        problems.append(
+            f"supported_targets names '{key}', but the capability registry has no platform '{key}'"
+        )
         continue
     caps = plat["capabilities"]
     want_caps = sorted(k for k, v in caps.items() if v["status"] in PROVIDED)
@@ -264,6 +294,14 @@ for key in d.get("supported_targets", []):
             )
 
 if mode == "sync":
+    # Structural problems are fatal here too. Writing a "regenerated" file derived from a
+    # declaration already known to be broken would launder the fault into committed data
+    # and report success while doing it.
+    if problems:
+        for p in problems:
+            print(p, file=sys.stderr)
+        print("refusing to sync from a broken supported_targets declaration", file=sys.stderr)
+        sys.exit(1)
     if changed:
         open(targets_path, "w").write(json.dumps(d, indent=2, ensure_ascii=False) + "\n")
         print("Regenerated capabilities/capability_gaps from the capability registry")
