@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Removed
+
+- `.github/workflows/regression-tests.yml`. After it was changed to call `make test`,
+  it ran a command byte-identical to `ci.yml`'s `test (3.12)` leg on an identical
+  trigger, so it was a second thing to keep in sync rather than a second signal — the
+  failure mode that let both the directory-target and pip-less-venv bugs be fixed in
+  one place and not the other. `Scan emulator regression tests` was not a required
+  status check in either active ruleset (only `CI` is), so no merge gate changed. The
+  iter-17..iter-20 provenance from its header moved into the docstring of
+  `scripts/test_scan_repo_paths.py`.
+
 ### Fixed
 
 - The CI Python matrix now tests the versions it names. `make test` picks its

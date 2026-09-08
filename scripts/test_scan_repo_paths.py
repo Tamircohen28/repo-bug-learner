@@ -7,6 +7,14 @@ directory name itself — making every file in the repo pass the path filter,
 regardless of whether the file was actually calendar code. Caller now passes
 repo-relative paths via `f.relative_to(repo)`.
 
+These tests carry the lessons from iter-17 through iter-20 and are the reason
+each exclusion exists:
+
+- relative-path matching (iter 20, the motivating bug above)
+- Clock / storage-ts / getOrElse exclusions in CalendarNowWithoutExplicitTimezone
+  (iter 19)
+- adapter-receiver removal in StaffQueryMissingAppDefId (iter 20)
+
 Run with: .venv/bin/python -m pytest scripts/test_scan_repo_paths.py -v
 Or standalone: .venv/bin/python scripts/test_scan_repo_paths.py
 """
