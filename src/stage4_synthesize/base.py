@@ -47,7 +47,7 @@ class ClaudeClient:
 
         Streaming avoids SDK HTTP timeouts on large outputs. Adaptive thinking lets
         the model decide when deep reasoning is worth the token cost. xhigh effort
-        is the recommended setting for coding/synthesis tasks on Opus 4.8.
+        is the recommended setting for coding/synthesis tasks on Opus 5.
         cache_control on the system prompt is a no-op for short prompts but kicks in
         automatically when the project_context grows large enough (≥4096 tokens).
         """

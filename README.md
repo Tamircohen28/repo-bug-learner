@@ -3,30 +3,16 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Tamircohen28">
-    <img src="https://img.shields.io/badge/author-Tamir%20Cohen-181717?logo=github" alt="Author" />
-  </a>
-  <a href="https://github.com/Tamircohen28/repo-bug-learner/actions/workflows/ci.yml">
-    <img src="https://github.com/Tamircohen28/repo-bug-learner/actions/workflows/ci.yml/badge.svg" alt="CI" />
-  </a>
-  <a href="LICENSE">
-    <img src="https://img.shields.io/badge/license-MIT-green" alt="License" />
-  </a>
-  <a href="pyproject.toml">
-    <img src="https://img.shields.io/badge/version-0.1.0-blue" alt="Version" />
-  </a>
+  <a href="https://github.com/Tamircohen28"><img src="https://img.shields.io/badge/author-Tamir%20Cohen-181717?logo=github" alt="Author" /></a>
+  <a href="https://github.com/Tamircohen28/repo-bug-learner/actions/workflows/ci.yml"><img src="https://github.com/Tamircohen28/repo-bug-learner/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License" /></a>
+  <a href="pyproject.toml"><img src="https://img.shields.io/badge/version-0.1.0-blue" alt="Version" /></a>
 </p>
 
 <p align="center">
-  <a href="docs/engineering/build-and-release/platform-targets.json">
-    <img src="https://img.shields.io/badge/Claude%20Code-2.0.0-blueviolet" alt="Claude Code" />
-  </a>
-  <a href="docs/engineering/build-and-release/platform-targets.json">
-    <img src="https://img.shields.io/badge/Cursor-0.45.0-000000" alt="Cursor" />
-  </a>
-  <a href="docs/engineering/build-and-release/platform-targets.json">
-    <img src="https://img.shields.io/badge/Codex-0.40.0-412991" alt="Codex" />
-  </a>
+  <a href="docs/engineering/build-and-release/platform-targets.json"><img src="https://img.shields.io/badge/Claude%20Code-2.1.263-blueviolet" alt="Claude Code" /></a>
+  <a href="docs/engineering/build-and-release/platform-targets.json"><img src="https://img.shields.io/badge/Cursor-3.19.13-000000" alt="Cursor" /></a>
+  <a href="docs/engineering/build-and-release/platform-targets.json"><img src="https://img.shields.io/badge/Codex-not%20validated-lightgrey" alt="Codex" /></a>
 </p>
 
 # repo-bug-learner

@@ -49,12 +49,14 @@ python -m src.orchestrator batch --repo backend --since 2024-01-01
 
 ## Claude API notes
 
-- Default `model_strong` is `claude-opus-4-8` with adaptive thinking + `xhigh` effort
-  + streaming.
+- Default `model_strong` is `claude-opus-5` with adaptive thinking + `xhigh` effort
+  + streaming. Opus 5 thinks by default; the call still passes
+  `{"type": "adaptive"}` explicitly so it stays correct on 4.8, where omitting it
+  means no thinking at all.
 - `model_fast` is `claude-haiku-4-5` — no thinking, no effort param (unsupported on
   Haiku).
-- Do NOT add `temperature`, `top_p`, or `budget_tokens` to Opus 4.8 calls (all
-  removed on 4.7+).
+- Do NOT add `temperature`, `top_p`, or `budget_tokens` to Opus 5 calls — all
+  three return a 400 on 4.7 and later.
 - The SDK retries 429/5xx automatically; tenacity covers connection failures only.
 
 ## Key files

@@ -22,7 +22,7 @@ repos = [
 [claude]
 base_url = "https://api.anthropic.com/v1"
 # Auth via env var: ANTHROPIC_API_KEY
-model_strong = "claude-opus-4-8"
+model_strong = "claude-opus-5"
 model_fast = "claude-haiku-4-5"
 embedding_model = "voyage-code-3"
 max_concurrent_calls = 4

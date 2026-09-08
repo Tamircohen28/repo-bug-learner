@@ -14,6 +14,12 @@ See [docs/CHANGELOG.md](docs/CHANGELOG.md) for full history.
 
 ### Changed
 
+- Platform targets refreshed: `claude_code` 2.0.0 -> 2.1.263 and `cursor` 0.45.0 ->
+  3.19.13 (validated), `codex` `latest_known` 0.40.0 -> 0.153.4 with `validated_against`
+  left as `"unknown"` because nothing here was actually run against it. README badges
+  regenerated to match.
+- Claude model references moved from `claude-opus-4-8` to `claude-opus-5`
+  (`config/config.example.toml`, AGENTS.md, stage4 synthesis docstring).
 - `make lint` runs the pinned ruff via `uvx`, so it needs no prior `make install`;
   added `make lint-fix`.
 - Timezone-aware datetimes throughout (`datetime.now(UTC)` instead of naive `now()`
