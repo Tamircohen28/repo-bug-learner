@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.0.1
       # `make lint` pins ruff to the exact version in pyproject.toml, so CI runs
       # the same command and the same linter a contributor runs locally.
       - run: make lint
