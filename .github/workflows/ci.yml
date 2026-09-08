@@ -40,6 +40,19 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: make test
+      # The matrix is only a real matrix if each leg actually runs its own
+      # version. `make test` picks its interpreter by probing PATH for python3.13,
+      # 3.12, 3.11 in that order, so without this the leg's verdict is decided by
+      # what the runner image ships rather than by what the leg pins.
+      - name: Assert this leg ran on its own interpreter
+        run: |
+          set -euo pipefail
+          actual=$(.venv/bin/python -c 'import sys; print("%d.%d" % sys.version_info[:2])')
+          if [ "$actual" != "${{ matrix.python-version }}" ]; then
+            echo "::error::.venv runs Python $actual but this leg pins ${{ matrix.python-version }}"
+            exit 1
+          fi
+          echo "leg ran on Python $actual"
 
   agent-check:
     runs-on: ubuntu-latest
