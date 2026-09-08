@@ -107,3 +107,21 @@ All notable changes to this project will be documented in this file.
 - Retry logic narrowed to network-level failures only; the SDK handles 429/5xx automatically via `max_retries=3`
 - Cache token usage (`cache_read_input_tokens`, `cache_creation_input_tokens`) now tracked in `ClaudeResponse`
 - `anthropic` SDK minimum bumped to `>=0.52.0`
+
+### Security
+
+- `service-integration/.github/workflows/opengrep.yml` no longer declares
+  `container: opengrep/opengrep:latest`. No such image exists on any registry —
+  Docker Hub returns `404 {"message":"object not found"}`, GHCR returns `404`, and
+  none of the upstream repo's workflows publish one — so the job could never have
+  started. The template now runs on `ubuntu-latest` and installs the `v1.30.0`
+  release binary, verified against a recorded SHA-256 before it is made executable,
+  so a moved or replaced asset fails the checksum rather than executing beside a
+  `security-events: write` token. The job then asserts that `opengrep --version`
+  reports the version it pinned, because a version written into a workflow is a
+  claim about what will run, not a test that it did.
+- `scripts/check-action-pinning.sh` now reads `container:` and `services.*.image:`
+  in addition to `uses:`, and requires an image digest (`name@sha256:<64 hex>`).
+  Both keys pull a registry image that runs with the job's own permissions, and
+  `uses:`-only scanning could not see either — the whole class was unchecked until
+  it was looked for.
