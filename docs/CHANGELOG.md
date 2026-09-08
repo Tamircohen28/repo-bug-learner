@@ -54,6 +54,12 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- `uv.lock` is now tracked. Every runtime dependency in `pyproject.toml` is declared
+  as a lower bound with no ceiling, so two `make install` runs on different days
+  could resolve to different versions with nothing recording which one was tested.
+  This repo has already paid for that once — an unpinned ruff turned a green CI red
+  on an unchanged tree. Verified with `uv lock --check` (73 packages, consistent
+  with pyproject) and a `uv sync --frozen` install that runs the suite green.
 - `core/capabilities/platforms.json` + `schema.json` — the single source of truth for
   what each supported agent surface (Claude Code, Cursor, Codex) can actually do.
   Every supported surface answers all 19 capability keys, nothing is claimed `native`
