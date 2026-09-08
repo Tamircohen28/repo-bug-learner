@@ -68,23 +68,39 @@ assert-contract:
 
 repo-standards-gate: agent-polish-gate assert-contract
 
-# Real directory target, so it is built once and reused. The old recipe hid every
-# failure behind `2>/dev/null || true`, which turned a missing interpreter into a
-# confusing "no such file .venv/bin/python" two lines later.
-.venv:
-	@[ -n "$(PYTHON)" ] || { \
-		echo "No Python >=3.11 on PATH (pyproject requires-python = >=3.11)."; \
-		echo "Install one, or point at it: make $(MAKECMDGOALS) PYTHON=/path/to/python3.11"; \
-		exit 1; \
-	}
-	$(PYTHON) -m venv .venv
-	.venv/bin/pip install -q semgrep==$(SEMGREP_VERSION)
+# `.venv` alone is the wrong prerequisite: `make install` runs `uv sync`, which
+# creates that same directory WITHOUT semgrep (it is not in pyproject) and on an
+# interpreter of uv's choosing. A bare directory target is "up to date" in both
+# cases, so the documented `make install && make test` would reach the precision
+# check with no .venv/bin/semgrep, and an old 3.10 venv would slip past the floor.
+# The stamp records what was actually verified and names the semgrep pin, so
+# bumping SEMGREP_VERSION invalidates it on its own.
+VENV_STAMP := .venv/.deps-ok-$(SEMGREP_VERSION)
 
-test: precision | .venv
+$(VENV_STAMP):
+	@if [ -x .venv/bin/python ]; then \
+		.venv/bin/python -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' || { \
+			echo ".venv runs $$(.venv/bin/python -V 2>&1), below the >=3.11 floor in pyproject."; \
+			echo "Rebuild it on a newer interpreter: make uninstall && make install"; \
+			exit 1; \
+		}; \
+	else \
+		[ -n "$(PYTHON)" ] || { \
+			echo "No Python >=3.11 on PATH (pyproject requires-python = >=3.11)."; \
+			echo "Install one, or point at it: make $(MAKECMDGOALS) PYTHON=/path/to/python3.11"; \
+			exit 1; \
+		}; \
+		$(PYTHON) -m venv .venv; \
+	fi
+	.venv/bin/pip install -q semgrep==$(SEMGREP_VERSION)
+	@rm -f .venv/.deps-ok-*
+	@touch $@
+
+test: precision $(VENV_STAMP)
 	.venv/bin/python scripts/test_scan_repo_paths.py
 	@if [ -f .venv/bin/pytest ]; then .venv/bin/pytest -q; fi
 
-precision: | .venv
+precision: $(VENV_STAMP)
 	.venv/bin/python scripts/precision_check.py
 
 lint:
@@ -98,5 +114,5 @@ clean:
 	find . -type d -name __pycache__ -not -path './out/*' -prune -exec rm -rf {} + 2>/dev/null || true
 	rm -rf rule-validator/target
 
-schema: | .venv
+schema: $(VENV_STAMP)
 	.venv/bin/python -m src.orchestrator schema

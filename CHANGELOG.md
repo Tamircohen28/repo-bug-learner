@@ -17,6 +17,11 @@ See [docs/CHANGELOG.md](docs/CHANGELOG.md) for full history.
   The Makefile now selects the first interpreter that clears 3.11 (override with
   `make test PYTHON=...`) and fails with a clear message when there is none, instead
   of the old `2>/dev/null || true` that surfaced as `no such file: .venv/bin/python`.
+  Readiness is tracked by a stamp file rather than the `.venv` directory itself,
+  because `make install` (`uv sync`) creates that directory without semgrep and on
+  an interpreter of its own choosing — a directory target reads as up to date in
+  both cases, so `make install && make test` reached the precision check with no
+  `.venv/bin/semgrep`, and an existing 3.10 venv slipped past the floor entirely.
 - `actions/setup-python` v6 -> v7 in `regression-tests.yml`. The bump landed in
   `ci.yml` only, so the other workflow was left behind.
 
