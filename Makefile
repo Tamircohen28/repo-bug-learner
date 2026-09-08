@@ -1,6 +1,7 @@
 .PHONY: help install update uninstall test lint lint-fix clean schema precision \
 	agent\:check agent-polish-gate repo-standards-gate assert-contract \
 	check-agent-drift check-feature-equivalence check-platform-targets \
+	skill-bridge skill-bridge-check \
 	platform-targets-sync platform-targets-assert
 
 TAMIRS_CONTRACT ?= $(HOME)/Projects/tamirs-superpowers/skills/repo/_contract
@@ -23,7 +24,8 @@ uninstall:
 	rm -rf .venv
 	$(MAKE) clean
 
-agent\:check: check-agent-drift check-feature-equivalence check-platform-targets
+agent\:check: check-agent-drift check-feature-equivalence check-platform-targets \
+	skill-bridge-check
 
 check-agent-drift:
 	bash scripts/check-agent-drift.sh .
@@ -33,6 +35,12 @@ check-feature-equivalence:
 
 check-platform-targets:
 	bash scripts/check-platform-targets.sh .
+
+skill-bridge:
+	bash scripts/sync-skill-bridge.sh .
+
+skill-bridge-check:
+	bash scripts/sync-skill-bridge.sh . --check
 
 platform-targets-sync:
 	bash scripts/check-platform-targets.sh . --sync

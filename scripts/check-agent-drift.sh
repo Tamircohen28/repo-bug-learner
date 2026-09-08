@@ -33,6 +33,7 @@ fi
 CURSOR_RULES="$ROOT/.cursor/rules"
 if [[ -d "$CURSOR_RULES" ]]; then
   FOUND_REF=false
+  # Prefer 000-project.mdc; else any always-on rule; else any .mdc
   for candidate in \
     "$CURSOR_RULES/000-project.mdc" \
     $(find "$CURSOR_RULES" -maxdepth 1 -name '*.mdc' 2>/dev/null | head -20); do
@@ -45,6 +46,7 @@ if [[ -d "$CURSOR_RULES" ]]; then
   if [[ "$FOUND_REF" == false ]] && [[ -n "$(find "$CURSOR_RULES" -maxdepth 1 -name '*.mdc' 2>/dev/null | head -1)" ]]; then
     err "No .cursor/rules/*.mdc file references AGENTS.md"
   fi
+  # .md files in rules dir are ignored by Cursor
   if find "$CURSOR_RULES" -maxdepth 1 -name '*.md' 2>/dev/null | grep -q .; then
     err ".cursor/rules/ contains .md files — Cursor ignores them; rename to .mdc"
   fi

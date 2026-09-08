@@ -1,28 +1,110 @@
 {
   "schema_version": 1,
   "last_reviewed": "2026-07-10",
+  "supported_targets": [
+    "claude_code",
+    "codex",
+    "cursor"
+  ],
   "reviewed_by_skill": "tamirs-superpowers@1.6.1",
   "targets": {
     "claude_code": {
+      "platform": "claude",
       "supported_min": "2.0.0",
       "validated_against": "2.0.0",
       "latest_known": "2.0.0",
-      "doc_urls": ["https://code.claude.com/docs/en/overview"],
-      "features_adopted": ["agents-md-import", "project-skills"]
+      "doc_urls": [
+        "https://code.claude.com/docs/en/overview"
+      ],
+      "features_adopted": [
+        "agents-md-import",
+        "project-skills"
+      ],
+      "capabilities": [
+        "agent_teams",
+        "artifacts",
+        "ask_user_question",
+        "background_tasks",
+        "git",
+        "github_cli",
+        "parallel_subagents",
+        "session_transcripts",
+        "shell",
+        "skill_auto_invocation",
+        "skills",
+        "subagents",
+        "worktree_isolation"
+      ],
+      "capability_gaps": {
+        "extension_install": "Not a universal mechanism. Clone the repo and open it.",
+        "hooks": "The repo's guards are scripts/check-*.sh, run from `make agent:check` in CI rather than from platform lifecycle events. No hooks are declared.",
+        "mcp": "This repo declares no MCP servers; the pipeline shells out to git, gh, semgrep and sbt directly.",
+        "plugin_marketplace": "repo-bug-learner is an application, not a plugin: agents read AGENTS.md from a clone rather than installing a manifest.",
+        "slash_commands": "Invoke the repo-bug-review skill by describing it in prose.",
+        "statusline": "Cosmetic only, and no skill here depends on it."
+      }
     },
     "cursor": {
+      "platform": "cursor",
       "supported_min": "0.45.0",
       "validated_against": "0.45.0",
       "latest_known": "0.45.0",
-      "doc_urls": ["https://cursor.com/docs"],
-      "features_adopted": ["mdc-rules", "agents-md"]
+      "doc_urls": [
+        "https://cursor.com/docs"
+      ],
+      "features_adopted": [
+        "mdc-rules",
+        "agents-md"
+      ],
+      "capabilities": [
+        "git",
+        "github_cli",
+        "shell",
+        "skill_auto_invocation",
+        "skills",
+        "subagents",
+        "worktree_isolation"
+      ],
+      "capability_gaps": {
+        "agent_teams": "Use one-shot delegation plus files under the session output dir.",
+        "artifacts": "Write the report to a file in the repo and give the path.",
+        "extension_install": "Clone the repo and open it in Cursor.",
+        "hooks": "Guards run in CI via `make agent:check`.",
+        "mcp": "This repo declares no MCP servers.",
+        "plugin_marketplace": "repo-bug-learner is an application, not a plugin: agents read AGENTS.md from a clone rather than installing a manifest.",
+        "slash_commands": "Describe the review task in prose.",
+        "statusline": "Cosmetic only; omit it."
+      }
     },
     "codex": {
+      "platform": "codex",
       "supported_min": "0.40.0",
       "validated_against": "0.40.0",
       "latest_known": "0.40.0",
-      "doc_urls": ["https://developers.openai.com/codex/guides/agents-md"],
-      "features_adopted": ["agents-md"]
+      "doc_urls": [
+        "https://developers.openai.com/codex/guides/agents-md"
+      ],
+      "features_adopted": [
+        "agents-md"
+      ],
+      "capabilities": [
+        "git",
+        "github_cli",
+        "shell",
+        "skills",
+        "worktree_isolation"
+      ],
+      "capability_gaps": {
+        "agent_teams": "Use files under the session output dir as the message bus.",
+        "artifacts": "Write the report to a file in the repo and give the path.",
+        "extension_install": "Clone the repo and point Codex at it.",
+        "hooks": "Guards run in CI via `make agent:check`.",
+        "mcp": "This repo declares no MCP servers.",
+        "plugin_marketplace": "repo-bug-learner is an application, not a plugin: agents read AGENTS.md from a clone rather than installing a manifest.",
+        "skill_auto_invocation": "Name the review procedure explicitly; AGENTS.md documents it.",
+        "slash_commands": "Describe the review task in prose.",
+        "statusline": "Cosmetic only; omit it."
+      }
     }
   }
 }
