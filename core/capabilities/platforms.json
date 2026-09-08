@@ -1,0 +1,450 @@
+{
+  "schema_version": 2,
+  "last_reviewed": "2026-09-08",
+  "capability_definitions": {
+    "skills": {
+      "summary": "Discovers and loads SKILL.md files shipped by this repo.",
+      "degradation": "None possible — a target without skills is not a supported target."
+    },
+    "skill_auto_invocation": {
+      "summary": "Selects a skill from its description without the user naming it.",
+      "degradation": "Document the explicit invocation form (slash command or 'use the X skill') in the install guide."
+    },
+    "subagents": {
+      "summary": "Delegates a bounded task to a separate agent with its own context.",
+      "degradation": "Run the role inline in the main session, sequentially, with a narrowed scope."
+    },
+    "parallel_subagents": {
+      "summary": "Runs two or more subagents concurrently.",
+      "degradation": "Fan out sequentially; the task graph still holds, only wall-clock time changes."
+    },
+    "agent_teams": {
+      "summary": "Long-lived named agents that message each other during a session.",
+      "degradation": "Use one-shot subagents plus files under session-files/ as the message bus."
+    },
+    "hooks": {
+      "summary": "Runs THIS REPO'S declared hook scripts on that platform's lifecycle events. Like every row here, this describes this repo's artifacts on that platform, not the platform's abstract feature set: the question is 'if I install this plugin there, do my hooks run?', not 'is that product hooks-capable?'",
+      "degradation": "Move the guard into the skill body as an explicit step, and into CI as a check."
+    },
+    "mcp": {
+      "summary": "Connects Model Context Protocol servers declared by the repo.",
+      "degradation": "Use the equivalent CLI (gh, curl) through the shell capability."
+    },
+    "statusline": {
+      "summary": "Renders a repo-provided status line in the session chrome.",
+      "degradation": "Purely cosmetic — omit it. Never make a skill depend on it."
+    },
+    "shell": {
+      "summary": "Executes arbitrary shell commands in the workspace.",
+      "degradation": "Emit the commands for the user to run and wait for pasted output."
+    },
+    "git": {
+      "summary": "Git is on PATH and the workspace is a repository.",
+      "degradation": "Skip branch/commit/worktree workflows; skills that need them declare git as required."
+    },
+    "github_cli": {
+      "summary": "The gh CLI is installed and authenticated.",
+      "degradation": "Optional feature dependency. Fall back to printing the PR/issue body for the user to file manually."
+    },
+    "background_tasks": {
+      "summary": "Runs a long command detached and reports its exit later.",
+      "degradation": "Run in the foreground with a bounded timeout."
+    },
+    "worktree_isolation": {
+      "summary": "Each task gets its own git worktree so concurrent agents do not collide.",
+      "degradation": "Single checkout, one task at a time; the orchestrator serializes writes."
+    },
+    "plugin_marketplace": {
+      "summary": "Installs and updates this plugin from a hosted marketplace listing.",
+      "degradation": "Document a direct install path (git clone plus a local plugin/extension link)."
+    },
+    "extension_install": {
+      "summary": "Installs the repo directly as an extension from a git URL.",
+      "degradation": "Use the platform's own install path; this is not a universal mechanism."
+    },
+    "slash_commands": {
+      "summary": "Exposes repo-provided commands as /name.",
+      "degradation": "Users invoke the skill by describing it in prose."
+    },
+    "ask_user_question": {
+      "summary": "Presents a structured multiple-choice question mid-run.",
+      "degradation": "Ask in prose and stop for a free-text reply."
+    },
+    "artifacts": {
+      "summary": "Publishes a rendered HTML/Markdown page as a shareable artifact.",
+      "degradation": "Write the same content to a file in the repo and tell the user the path."
+    },
+    "session_transcripts": {
+      "summary": "Session history is readable on disk in a documented format.",
+      "degradation": "Usage analytics (session-report) are unavailable; say so rather than reporting zeros."
+    }
+  },
+  "platforms": {
+    "claude": {
+      "display_name": "Claude",
+      "vendor": "Anthropic",
+      "aliases": [
+        "anthropic"
+      ],
+      "primary_surface": "claude_code",
+      "doc_urls": [
+        "https://code.claude.com/docs/en/overview",
+        "https://code.claude.com/docs/en/skills"
+      ],
+      "surfaces": {
+        "claude_code": {
+          "display_name": "Claude Code",
+          "kind": "cli",
+          "support": "supported",
+          "aliases": [
+            "claude-code"
+          ],
+          "doc_urls": [
+            "https://code.claude.com/docs/en/overview",
+            "https://code.claude.com/docs/en/skills"
+          ],
+          "install": {
+            "type": "path",
+            "command": "git clone https://github.com/Tamircohen28/repo-bug-learner && cd repo-bug-learner && make install && claude",
+            "doc": "docs/user/quick-start.md"
+          },
+          "validation": {
+            "command": "make agent:check"
+          },
+          "capabilities": {
+            "skills": {
+              "status": "native",
+              "since": "2.0.0",
+              "validation": "test -f .claude/skills/repo-bug-review/SKILL.md"
+            },
+            "skill_auto_invocation": {
+              "status": "native",
+              "since": "2.0.0",
+              "validation": "grep -q '^description:' .claude/skills/repo-bug-review/SKILL.md"
+            },
+            "subagents": {
+              "status": "native",
+              "since": "2.0.0",
+              "validation": "command -v claude",
+              "notes": "Provided by the harness. This repo ships no agent definitions of its own; AGENTS.md delegates bounded reads ad hoc."
+            },
+            "parallel_subagents": {
+              "status": "native",
+              "since": "2.0.0",
+              "validation": "command -v claude"
+            },
+            "agent_teams": {
+              "status": "native-experimental",
+              "validation": "command -v claude",
+              "notes": "Shipped but still moving; nothing in this repo depends on it."
+            },
+            "hooks": {
+              "status": "unsupported",
+              "fallback": "The repo's guards are scripts/check-*.sh, run from `make agent:check` in CI rather than from platform lifecycle events. No hooks are declared."
+            },
+            "mcp": {
+              "status": "unsupported",
+              "fallback": "This repo declares no MCP servers; the pipeline shells out to git, gh, semgrep and sbt directly."
+            },
+            "statusline": {
+              "status": "unsupported",
+              "fallback": "Cosmetic only, and no skill here depends on it."
+            },
+            "shell": {
+              "status": "native",
+              "validation": "command -v bash"
+            },
+            "git": {
+              "status": "native",
+              "validation": "git rev-parse --is-inside-work-tree"
+            },
+            "github_cli": {
+              "status": "native",
+              "validation": "gh auth status"
+            },
+            "background_tasks": {
+              "status": "native",
+              "validation": "command -v claude"
+            },
+            "worktree_isolation": {
+              "status": "native",
+              "since": "2.0.0",
+              "validation": "git worktree list"
+            },
+            "plugin_marketplace": {
+              "status": "unsupported",
+              "fallback": "repo-bug-learner is an application, not a plugin: agents read AGENTS.md from a clone rather than installing a manifest."
+            },
+            "extension_install": {
+              "status": "unsupported",
+              "fallback": "Not a universal mechanism. Clone the repo and open it."
+            },
+            "slash_commands": {
+              "status": "unsupported",
+              "fallback": "Invoke the repo-bug-review skill by describing it in prose."
+            },
+            "ask_user_question": {
+              "status": "native",
+              "validation": "command -v claude"
+            },
+            "artifacts": {
+              "status": "partial",
+              "notes": "Available in the harness, but no skill here publishes one; mining reports are written to files under the repo."
+            },
+            "session_transcripts": {
+              "status": "native",
+              "validation": "test -d \"$HOME/.claude/projects\""
+            }
+          }
+        },
+        "claude_desktop": {
+          "display_name": "Claude Desktop",
+          "kind": "desktop",
+          "support": "unverified",
+          "runtime_surface_of": "claude_code",
+          "unverified_reason": "Claude Desktop consumes the same CLAUDE.md and .claude/skills payload as Claude Code, but this repo's workflow is a shell pipeline (uv, semgrep, sbt, git) that has never been run there. The CLI's results are not carried over because the desktop surface's shell and git access differ, and that difference is exactly what the pipeline depends on.",
+          "aliases": [
+            "claude-desktop"
+          ]
+        }
+      }
+    },
+    "cursor": {
+      "display_name": "Cursor",
+      "vendor": "Anysphere",
+      "primary_surface": "cursor",
+      "doc_urls": [
+        "https://cursor.com/docs"
+      ],
+      "surfaces": {
+        "cursor": {
+          "display_name": "Cursor",
+          "kind": "ide",
+          "support": "supported",
+          "aliases": [
+            "cursor-ide"
+          ],
+          "doc_urls": [
+            "https://cursor.com/docs",
+            "https://cursor.com/docs/context/rules"
+          ],
+          "install": {
+            "type": "path",
+            "command": "git clone https://github.com/Tamircohen28/repo-bug-learner && cd repo-bug-learner && make install, then open the folder in Cursor",
+            "doc": "docs/user/quick-start.md"
+          },
+          "validation": {
+            "command": "make agent:check"
+          },
+          "capabilities": {
+            "skills": {
+              "status": "adapter",
+              "since": "0.45.0",
+              "notes": "Reached through .cursor/rules/000-project.mdc, which imports AGENTS.md. The .agents/skills payload is not a native Cursor skill format."
+            },
+            "skill_auto_invocation": {
+              "status": "partial",
+              "notes": "The .mdc rule applies by glob/alwaysApply semantics, not by matching a skill description to the request."
+            },
+            "subagents": {
+              "status": "partial",
+              "notes": "Cursor ships background agents, but this repo declares none and has not exercised them here."
+            },
+            "parallel_subagents": {
+              "status": "unknown",
+              "fallback": "Fan out sequentially; the task order still holds."
+            },
+            "agent_teams": {
+              "status": "unsupported",
+              "fallback": "Use one-shot delegation plus files under the session output dir."
+            },
+            "hooks": {
+              "status": "unsupported",
+              "fallback": "Guards run in CI via `make agent:check`."
+            },
+            "mcp": {
+              "status": "unsupported",
+              "fallback": "This repo declares no MCP servers."
+            },
+            "statusline": {
+              "status": "unsupported",
+              "fallback": "Cosmetic only; omit it."
+            },
+            "shell": {
+              "status": "native",
+              "validation": "command -v bash"
+            },
+            "git": {
+              "status": "native",
+              "validation": "git rev-parse --is-inside-work-tree"
+            },
+            "github_cli": {
+              "status": "native",
+              "validation": "gh auth status"
+            },
+            "background_tasks": {
+              "status": "unknown",
+              "fallback": "Run in the foreground with a bounded timeout."
+            },
+            "worktree_isolation": {
+              "status": "emulated",
+              "fallback": "Built from plain `git worktree` through the shell capability."
+            },
+            "plugin_marketplace": {
+              "status": "unsupported",
+              "fallback": "repo-bug-learner is an application, not a plugin: agents read AGENTS.md from a clone rather than installing a manifest."
+            },
+            "extension_install": {
+              "status": "unsupported",
+              "fallback": "Clone the repo and open it in Cursor."
+            },
+            "slash_commands": {
+              "status": "unsupported",
+              "fallback": "Describe the review task in prose."
+            },
+            "ask_user_question": {
+              "status": "unknown",
+              "fallback": "Ask in prose and stop for a free-text reply."
+            },
+            "artifacts": {
+              "status": "unsupported",
+              "fallback": "Write the report to a file in the repo and give the path."
+            },
+            "session_transcripts": {
+              "status": "unknown",
+              "fallback": "Usage analytics are unavailable here; say so rather than reporting zeros."
+            }
+          }
+        },
+        "cursor_cli": {
+          "display_name": "Cursor CLI",
+          "kind": "cli",
+          "support": "unverified",
+          "unverified_reason": "Cursor ships a terminal client that reads the same .cursor/rules payload, but it was never installed or exercised against this repo. The IDE surface's measurements are not reused because rule application and tool availability differ between them.",
+          "aliases": [
+            "cursor-cli",
+            "cursor-agent"
+          ]
+        }
+      }
+    },
+    "codex": {
+      "display_name": "Codex",
+      "vendor": "OpenAI",
+      "primary_surface": "codex",
+      "doc_urls": [
+        "https://developers.openai.com/codex/guides/agents-md"
+      ],
+      "surfaces": {
+        "codex": {
+          "display_name": "Codex CLI",
+          "kind": "cli",
+          "support": "supported",
+          "aliases": [
+            "codex-cli",
+            "openai-codex"
+          ],
+          "doc_urls": [
+            "https://developers.openai.com/codex/guides/agents-md"
+          ],
+          "install": {
+            "type": "path",
+            "command": "git clone https://github.com/Tamircohen28/repo-bug-learner && cd repo-bug-learner && make install && codex",
+            "doc": "docs/user/quick-start.md"
+          },
+          "validation": {
+            "command": "make agent:check"
+          },
+          "capabilities": {
+            "skills": {
+              "status": "adapter",
+              "since": "0.40.0",
+              "notes": "Codex reads AGENTS.md directly. The .agents/skills payload is inlined as guidance there rather than discovered as a skill."
+            },
+            "skill_auto_invocation": {
+              "status": "unsupported",
+              "fallback": "Name the review procedure explicitly; AGENTS.md documents it."
+            },
+            "subagents": {
+              "status": "unknown",
+              "fallback": "Run the role inline, sequentially, with a narrowed scope."
+            },
+            "parallel_subagents": {
+              "status": "unknown",
+              "fallback": "Fan out sequentially."
+            },
+            "agent_teams": {
+              "status": "unsupported",
+              "fallback": "Use files under the session output dir as the message bus."
+            },
+            "hooks": {
+              "status": "unsupported",
+              "fallback": "Guards run in CI via `make agent:check`."
+            },
+            "mcp": {
+              "status": "unsupported",
+              "fallback": "This repo declares no MCP servers."
+            },
+            "statusline": {
+              "status": "unsupported",
+              "fallback": "Cosmetic only; omit it."
+            },
+            "shell": {
+              "status": "native",
+              "validation": "command -v bash"
+            },
+            "git": {
+              "status": "native",
+              "validation": "git rev-parse --is-inside-work-tree"
+            },
+            "github_cli": {
+              "status": "native",
+              "validation": "gh auth status"
+            },
+            "background_tasks": {
+              "status": "unknown",
+              "fallback": "Run in the foreground with a bounded timeout."
+            },
+            "worktree_isolation": {
+              "status": "emulated",
+              "fallback": "Built from plain `git worktree` through the shell capability."
+            },
+            "plugin_marketplace": {
+              "status": "unsupported",
+              "fallback": "repo-bug-learner is an application, not a plugin: agents read AGENTS.md from a clone rather than installing a manifest."
+            },
+            "extension_install": {
+              "status": "unsupported",
+              "fallback": "Clone the repo and point Codex at it."
+            },
+            "slash_commands": {
+              "status": "unsupported",
+              "fallback": "Describe the review task in prose."
+            },
+            "ask_user_question": {
+              "status": "unknown",
+              "fallback": "Ask in prose and stop for a free-text reply."
+            },
+            "artifacts": {
+              "status": "unsupported",
+              "fallback": "Write the report to a file in the repo and give the path."
+            },
+            "session_transcripts": {
+              "status": "unknown",
+              "fallback": "Usage analytics are unavailable here; say so rather than reporting zeros."
+            }
+          }
+        },
+        "codex_ide": {
+          "display_name": "Codex IDE extension",
+          "kind": "ide",
+          "support": "unverified",
+          "unverified_reason": "The editor extension reads the same AGENTS.md, but nobody has run this repo's pipeline through it. The CLI's rows are not copied across because the extension's shell access is mediated by the editor and was never measured.",
+          "aliases": [
+            "codex-ide"
+          ]
+        }
+      }
+    }
+  }
+}

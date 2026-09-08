@@ -4,25 +4,42 @@
   "reviewed_by_skill": "tamirs-superpowers@1.6.1",
   "targets": {
     "claude_code": {
+      "platform": "claude",
       "supported_min": "2.0.0",
       "validated_against": "2.0.0",
       "latest_known": "2.0.0",
-      "doc_urls": ["https://code.claude.com/docs/en/overview"],
-      "features_adopted": ["agents-md-import", "project-skills"]
+      "doc_urls": [
+        "https://code.claude.com/docs/en/overview"
+      ],
+      "features_adopted": [
+        "agents-md-import",
+        "project-skills"
+      ]
     },
     "cursor": {
+      "platform": "cursor",
       "supported_min": "0.45.0",
       "validated_against": "0.45.0",
       "latest_known": "0.45.0",
-      "doc_urls": ["https://cursor.com/docs"],
-      "features_adopted": ["mdc-rules", "agents-md"]
+      "doc_urls": [
+        "https://cursor.com/docs"
+      ],
+      "features_adopted": [
+        "mdc-rules",
+        "agents-md"
+      ]
     },
     "codex": {
+      "platform": "codex",
       "supported_min": "0.40.0",
       "validated_against": "0.40.0",
       "latest_known": "0.40.0",
-      "doc_urls": ["https://developers.openai.com/codex/guides/agents-md"],
-      "features_adopted": ["agents-md"]
+      "doc_urls": [
+        "https://developers.openai.com/codex/guides/agents-md"
+      ],
+      "features_adopted": [
+        "agents-md"
+      ]
     }
   }
 }
