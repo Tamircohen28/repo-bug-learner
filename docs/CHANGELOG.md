@@ -6,6 +6,18 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- The CI Python matrix now tests the versions it names. `make test` picks its
+  interpreter by probing `PATH` for `python3.13`, `python3.12`, `python3.11` in that
+  order, and `ubuntu-latest` ships `/usr/bin/python3.12` — so the `3.11` leg built a
+  3.12 venv and reported green for a floor it never exercised. Both workflows now pass
+  `PYTHON` explicitly and assert that the venv they built runs the version the job
+  pins, rather than trusting the probe.
+- `regression-tests.yml` no longer re-implements the test suite. It ran its own
+  `python -m venv` + `pip install semgrep` + script invocations, so neither the
+  directory-target fix nor the pip-less-venv fix reached it; its `3.12` pin was all
+  that kept it green. It now calls `make test`, which is a strict superset of what it
+  ran.
+
 - The semgrep install no longer assumes the venv has pip. `uv sync` builds `.venv`
   without pip, so `make test` on a checkout that had run `make install` died on
   `make: .venv/bin/pip: No such file or directory`. It now prefers `uv pip install`,
