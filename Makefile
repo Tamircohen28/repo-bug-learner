@@ -11,6 +11,19 @@ TAMIRS_CONTRACT ?= $(HOME)/Projects/tamirs-superpowers/skills/repo/_contract
 # cannot turn CI red on a repo that has not changed.
 RUFF_VERSION := $(shell sed -n 's/.*"ruff==\([0-9][0-9.]*\)".*/\1/p' pyproject.toml)
 
+# The test venv must satisfy pyproject's requires-python (>=3.11). Ambient `python`
+# is whatever PATH/pyenv happens to select -- 3.10.4 on at least one dev machine --
+# so `python -m venv` silently built a venv below the floor while CI stayed green,
+# because setup-python pins 3.12 there. Pick the first interpreter that actually
+# clears the floor. Override on the command line: `make test PYTHON=/path/to/python`.
+PYTHON := $(shell for p in python3.13 python3.12 python3.11 python3 python; do \
+	command -v $$p >/dev/null 2>&1 \
+	  && $$p -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' 2>/dev/null \
+	  && { echo $$p; break; }; \
+	done)
+
+SEMGREP_VERSION := 1.163.0
+
 help:
 	@echo "install update uninstall test lint lint-fix agent:check agent-polish-gate repo-standards-gate"
 
@@ -55,15 +68,23 @@ assert-contract:
 
 repo-standards-gate: agent-polish-gate assert-contract
 
-test: precision
-	python -m venv .venv 2>/dev/null || true
-	.venv/bin/pip install -q semgrep==1.163.0 2>/dev/null || true
+# Real directory target, so it is built once and reused. The old recipe hid every
+# failure behind `2>/dev/null || true`, which turned a missing interpreter into a
+# confusing "no such file .venv/bin/python" two lines later.
+.venv:
+	@[ -n "$(PYTHON)" ] || { \
+		echo "No Python >=3.11 on PATH (pyproject requires-python = >=3.11)."; \
+		echo "Install one, or point at it: make $(MAKECMDGOALS) PYTHON=/path/to/python3.11"; \
+		exit 1; \
+	}
+	$(PYTHON) -m venv .venv
+	.venv/bin/pip install -q semgrep==$(SEMGREP_VERSION)
+
+test: precision | .venv
 	.venv/bin/python scripts/test_scan_repo_paths.py
 	@if [ -f .venv/bin/pytest ]; then .venv/bin/pytest -q; fi
 
-precision:
-	python -m venv .venv 2>/dev/null || true
-	.venv/bin/pip install -q semgrep==1.163.0 2>/dev/null || true
+precision: | .venv
 	.venv/bin/python scripts/precision_check.py
 
 lint:
@@ -77,5 +98,5 @@ clean:
 	find . -type d -name __pycache__ -not -path './out/*' -prune -exec rm -rf {} + 2>/dev/null || true
 	rm -rf rule-validator/target
 
-schema:
+schema: | .venv
 	.venv/bin/python -m src.orchestrator schema
