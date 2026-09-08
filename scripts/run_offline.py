@@ -39,7 +39,7 @@ def embed(entries: list[dict]) -> np.ndarray:
     vec = TfidfVectorizer(
         max_features=4096,
         ngram_range=(1, 2),
-        token_pattern=r"[A-Za-z_][A-Za-z0-9_]+|[+\-=!<>]+",
+        token_pattern=r"[A-Za-z_][A-Za-z0-9_]+|[+\-=!<>]+",  # noqa: S106 - sklearn tokenizer regex, not a credential
         min_df=2,
         sublinear_tf=True,
     )

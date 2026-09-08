@@ -4,17 +4,18 @@ from __future__ import annotations
 
 import argparse
 import collections
+import contextlib
+import datetime as dt
 import html
 import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
-import datetime as dt
-import re
 
-from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import TruncatedSVD
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 PROJECT_ROOT = pathlib.Path(__file__).resolve().parents[1]
 SCHEDULER_REPO = pathlib.Path("/Users/tamirc/IdeaProjects/scheduler")
@@ -26,8 +27,8 @@ DEFAULT_OUTPUT = PROJECT_ROOT / "out" / "report" / "index.html"
 def load_corpus(path: pathlib.Path) -> list[dict]:
     entries = []
     with path.open() as f:
-        for line in f:
-            line = line.strip()
+        for raw_line in f:
+            line = raw_line.strip()
             if not line:
                 continue
             try:
@@ -257,13 +258,13 @@ def get_top_authors(repo: pathlib.Path, shas: list[str], top_n: int = 10) -> lis
         chunk = shas[i:i + CHUNK]
         try:
             r = subprocess.run(
-                ["git", "-C", str(repo), "show", "--no-patch", "--format=%an"] + chunk,
-                capture_output=True, text=True, timeout=120
+                ["git", "-C", str(repo), "show", "--no-patch", "--format=%an", *chunk],
+                capture_output=True, text=True, timeout=120, check=False,
             )
-            for line in r.stdout.splitlines():
-                line = line.strip()
-                if line:
-                    counter[line] += 1
+            for raw_line in r.stdout.splitlines():
+                author = raw_line.strip()
+                if author:
+                    counter[author] += 1
         except Exception as e:
             print(f"[warn] git show chunk failed: {e}", file=sys.stderr)
     return counter.most_common(top_n)
@@ -278,7 +279,7 @@ def build_time_series(entries: list[dict]) -> dict:
         if not ts:
             continue
         try:
-            d = dt.datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            d = dt.datetime.fromisoformat(ts)
             key = f"{d.year:04d}-{d.month:02d}"
             bucket[key] += 1
         except Exception:
@@ -665,10 +666,8 @@ def main() -> int:
     dates = [e.get("committed_at") for e in entries if e.get("committed_at")]
     dates_parsed = []
     for d in dates:
-        try:
-            dates_parsed.append(dt.datetime.fromisoformat(d.replace("Z", "+00:00")))
-        except Exception:
-            pass
+        with contextlib.suppress(Exception):
+            dates_parsed.append(dt.datetime.fromisoformat(d))
     if dates_parsed:
         date_range = f"{min(dates_parsed).date()} → {max(dates_parsed).date()}"
     else:
@@ -726,7 +725,7 @@ def main() -> int:
         "scatter": scatter,
         "clusters": clusters,
         "rules": rules,
-        "build_timestamp": dt.datetime.now().isoformat(timespec="seconds"),
+        "build_timestamp": dt.datetime.now(dt.UTC).isoformat(timespec="seconds"),
         "last_commit_sha": last_sha or "n/a",
         "clusters_source": clusters_src,
         "active_rules": active_rules,

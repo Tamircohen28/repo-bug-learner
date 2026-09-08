@@ -12,10 +12,9 @@ import argparse
 import hashlib
 import json
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable
-
 
 # --- extraction helpers ------------------------------------------------------
 
@@ -44,7 +43,7 @@ def _strip_comments(src: str) -> str:
 def pattern_fingerprint(src: str) -> str:
     stripped = _strip_comments(src)
     normalized = _WS_RE.sub("", stripped)
-    return hashlib.sha1(normalized.encode("utf-8")).hexdigest()[:16]
+    return hashlib.sha1(normalized.encode("utf-8"), usedforsecurity=False).hexdigest()[:16]
 
 
 # Tokens we don't want polluting the anchor set (boilerplate / framework)
@@ -194,11 +193,11 @@ def write_dedup_md(candidate: Rule, verdict: str, overlaps: list[str], score: fl
         f"- jaccard: `{score}`",
         f"- overlaps with: {', '.join(f'`{o}`' for o in overlaps) if overlaps else '(none)'}",
         "",
-        "This rule was auto-flagged by `scripts/dedup_rules.py` because its "
+        ("This rule was auto-flagged by `scripts/dedup_rules.py` because its "
         "AST anchor set is substantially similar to an already-integrated "
         "rule (or its pattern fingerprint matches exactly). Review before "
         "integrating; consider merging anchors into the existing rule "
-        "instead of adding a duplicate.",
+        "instead of adding a duplicate."),
         "",
     ]
     md_path.write_text("\n".join(body), encoding="utf-8")

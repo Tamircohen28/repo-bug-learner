@@ -6,6 +6,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -40,8 +41,9 @@ def main() -> None:
     os.environ.setdefault("SEMGREP_HOME", str(ROOT / ".semgrep"))
     failures: list[tuple[str, float]] = []
 
+    tmpdir = Path(tempfile.mkdtemp(prefix="rbl_precision_"))
     for rule in SCALA_RULES:
-        out = Path("/tmp/_precision_scala.json")
+        out = tmpdir / f"{rule}.json"
         subprocess.run(
             [
                 sys.executable,

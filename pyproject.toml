@@ -24,7 +24,10 @@ dependencies = [
 dev = [
     "pytest>=8.3.0",
     "pytest-asyncio>=0.24.0",
-    "ruff>=0.7.0",
+    # Pinned exactly: ruff widens its default rule set between minor releases, so an
+    # unpinned linter turns any new ruff release into a red CI run on a repo that has
+    # not changed. Dependabot bumps this pin; the lint select list below pins the rules.
+    "ruff==0.16.6",
     "mypy>=1.13.0",
 ]
 
@@ -41,6 +44,49 @@ packages = ["src"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+
+[tool.ruff.lint]
+# Selected explicitly rather than relying on ruff's defaults, which widen between
+# releases and would otherwise turn a new ruff release into a red CI run on a repo
+# that has not changed. Adding a family here is a deliberate act, not a side effect
+# of an upgrade.
+select = [
+    "B",     # flake8-bugbear
+    "C4",    # flake8-comprehensions
+    "DTZ",   # flake8-datetimez - naive datetimes are a real bug source in mining
+    "E4",    # pycodestyle: imports
+    "E7",    # pycodestyle: statements
+    "E9",    # pycodestyle: runtime errors
+    "EXE",   # flake8-executable
+    "F",     # pyflakes
+    "FURB",  # refurb
+    "I",     # isort
+    "ISC",   # flake8-implicit-str-concat
+    "PERF",  # perflint
+    "PIE",   # flake8-pie
+    "PLE",   # pylint errors
+    "PLW",   # pylint warnings
+    "RUF",   # ruff-specific
+    "S",     # flake8-bandit
+    "SIM",   # flake8-simplify
+    "UP",    # pyupgrade
+]
+ignore = [
+    # The pipeline walks thousands of third-party commits, PRs and tickets. One
+    # malformed input must not abort the whole batch, so broad recovery around
+    # per-item work is deliberate.
+    "BLE001",  # blind-except
+    "S110",    # try-except-pass
+    "S112",    # try-except-continue
+    # This tool's job is orchestrating external analyzers (git, semgrep, sbt).
+    # Invoking them by name, resolved from PATH, is the design.
+    "S603",    # subprocess-without-shell-equals-true
+    "S607",    # start-process-with-partial-path
+    # Sampling and shuffling for corpus splits - not cryptographic.
+    "S311",    # suspicious-non-cryptographic-random-usage
+    # Scripts use bare asserts as internal invariants.
+    "S101",    # assert
+]
 
 [tool.mypy]
 python_version = "3.11"

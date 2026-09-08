@@ -60,10 +60,7 @@ MAX_FILE_DIFF_BYTES = 50 * 1024
 def is_fix_title(title: str) -> bool:
     if JIRA_KEY_RE.search(title):
         return True
-    for pat in FIX_TITLE_PATTERNS:
-        if pat.search(title):
-            return True
-    return False
+    return any(pat.search(title) for pat in FIX_TITLE_PATTERNS)
 
 
 def extract_jira_labels(*texts: str) -> list[str]:
@@ -110,10 +107,10 @@ def parse_log(repo_path: str, since: str, all_branches: bool = False) -> list[di
     out = subprocess.run(cmd, capture_output=True, text=True, check=True, errors="replace").stdout
     commits = []
     for raw in out.split("\x1e"):
-        raw = raw.strip("\n")
-        if not raw:
+        record = raw.strip("\n")
+        if not record:
             continue
-        parts = raw.split("\x00")
+        parts = record.split("\x00")
         if len(parts) < 5:
             continue
         sha, subject, author, date, body = parts[0], parts[1], parts[2], parts[3], parts[4]
@@ -176,7 +173,8 @@ _REPO_NAME_WORKER: str | None = None
 
 
 def _init_worker(repo_path: str, repo_name: str) -> None:
-    global _REPO_PATH_WORKER, _REPO_NAME_WORKER
+    # Process-pool initializer: module globals are how worker state is seeded.
+    global _REPO_PATH_WORKER, _REPO_NAME_WORKER  # noqa: PLW0603
     _REPO_PATH_WORKER = repo_path
     _REPO_NAME_WORKER = repo_name
 
@@ -220,9 +218,10 @@ def _process_commit(commit: dict) -> list[dict]:
         lang = lang_of(fpath)
         if not lang:
             continue
-        if len(fdiff.encode("utf-8", errors="replace")) > MAX_FILE_DIFF_BYTES:
-            fdiff = fdiff.encode("utf-8", errors="replace")[:MAX_FILE_DIFF_BYTES].decode("utf-8", errors="replace")
-        buggy = extract_buggy_code(fdiff)
+        capped = fdiff
+        if len(capped.encode("utf-8", errors="replace")) > MAX_FILE_DIFF_BYTES:
+            capped = capped.encode("utf-8", errors="replace")[:MAX_FILE_DIFF_BYTES].decode("utf-8", errors="replace")
+        buggy = extract_buggy_code(capped)
         if not buggy.strip():
             continue
         records.append({

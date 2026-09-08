@@ -63,16 +63,15 @@ class ClaudeClient:
         wait=wait_exponential(multiplier=2, max=30),
     )
     async def _call_strong(self, system: str, user: str, max_tokens: int) -> ClaudeResponse:
-        async with self._semaphore:
-            async with self._client.messages.stream(
-                model=self.model_strong,
-                system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
-                max_tokens=max_tokens,
-                thinking={"type": "adaptive"},
-                output_config={"effort": "xhigh"},
-                messages=[{"role": "user", "content": user}],
-            ) as stream:
-                final = await stream.get_final_message()
+        async with self._semaphore, self._client.messages.stream(
+            model=self.model_strong,
+            system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
+            max_tokens=max_tokens,
+            thinking={"type": "adaptive"},
+            output_config={"effort": "xhigh"},
+            messages=[{"role": "user", "content": user}],
+        ) as stream:
+            final = await stream.get_final_message()
 
         text = "".join(block.text for block in final.content if block.type == "text")
         usage = final.usage
@@ -111,10 +110,7 @@ class ClaudeClient:
 
 def extract_code_block(text: str, language: str | None = None) -> str:
     """Pull the first fenced code block from an LLM response, optionally filtering by language."""
-    if language:
-        pattern = rf"```{language}\s*\n(.*?)\n```"
-    else:
-        pattern = r"```(?:\w+)?\s*\n(.*?)\n```"
+    pattern = rf"```{language}\s*\n(.*?)\n```" if language else r"```(?:\w+)?\s*\n(.*?)\n```"
     match = re.search(pattern, text, re.DOTALL)
     if match:
         return match.group(1).strip()

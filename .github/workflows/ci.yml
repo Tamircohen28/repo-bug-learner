@@ -12,11 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-      - run: pip install ruff
-      - run: ruff check src scripts
+      - uses: astral-sh/setup-uv@v10
+      # `make lint` pins ruff to the exact version in pyproject.toml, so CI runs
+      # the same command and the same linter a contributor runs locally.
+      - run: make lint
 
   test:
     runs-on: ubuntu-latest

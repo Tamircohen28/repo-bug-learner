@@ -166,16 +166,15 @@ class SZZLabeler:
     def _is_trivial(commit) -> bool:
         """Filter out refactorings, formatting changes, comment-only changes."""
         # Heuristic: tiny commits in one file with mostly-blank lines are often noise
-        if len(commit.modified_files) == 0:
-            return True
-        if commit.insertions + commit.deletions < 2:
-            return True
         # TODO: integrate RefactoringMiner output here for higher precision
-        return False
+        return (
+            len(commit.modified_files) == 0
+            or commit.insertions + commit.deletions < 2
+        )
 
 
 class _Candidate:
-    __slots__ = ("sha", "file_path", "modified_file", "prior_commit")
+    __slots__ = ("file_path", "modified_file", "prior_commit", "sha")
 
     def __init__(self, sha, file_path, modified_file, prior_commit):
         self.sha = sha

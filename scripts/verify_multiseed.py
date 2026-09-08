@@ -32,7 +32,6 @@ import sys
 from pathlib import Path
 from typing import Any
 
-
 # ---------------------------------------------------------------------------
 
 def _seed_to_int(seed: str) -> int:
@@ -80,7 +79,7 @@ def _heuristic_verdict(finding: dict[str, Any], context: str) -> tuple[str, str]
     if any(m in f for m in test_markers):
         return "FP", "path contains test/spec/mock marker"
     snippet = finding.get("snippet", "").strip()
-    if snippet.startswith("//") or snippet.startswith("/*") or snippet.startswith("*"):
+    if snippet.startswith(("//", "/*", "*")):
         return "FP", "snippet looks like a comment"
     if "TODO" in context or "FIXME" in context:
         return "AMBIG", "TODO/FIXME nearby — may be known"
@@ -165,8 +164,8 @@ def main() -> int:
     lines.append("")
     lines.append("| seed | TP | FP | AMBIG | strict TP% |")
     lines.append("|---|---|---|---|---|")
-    for s in (list(per_seed_samples.keys()) + ["UNION"]) if per_seed_samples else ["ALL"]:
-        lines.append(f"| {s} |   |   |   |   |")
+    tally_rows = [*per_seed_samples, "UNION"] if per_seed_samples else ["ALL"]
+    lines.extend(f"| {s} |   |   |   |   |" for s in tally_rows)
     lines.append("")
     lines.append("---")
     lines.append("")

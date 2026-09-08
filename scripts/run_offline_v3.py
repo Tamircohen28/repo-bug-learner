@@ -31,7 +31,6 @@ from scipy.sparse import hstack
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import normalize
 
-
 MAX_ENTRIES_PER_COMMIT = 2
 MIN_DISTINCT_COMMITS = 3
 MIN_CLUSTER_SIZE = 5
@@ -69,7 +68,7 @@ def downsample_per_commit(entries: list[dict], cap: int, seed: int) -> list[dict
     for e in entries:
         by_commit[e["bug_key"]].append(e)
     kept: list[dict] = []
-    for _commit, group in by_commit.items():
+    for group in by_commit.values():
         if len(group) <= cap:
             kept.extend(group)
         else:
@@ -90,7 +89,7 @@ def embed(entries: list[dict], use_char_ngrams: bool = True) -> np.ndarray:
     word_vec = TfidfVectorizer(
         max_features=8192,
         ngram_range=(1, 3),
-        token_pattern=r"[A-Za-z_][A-Za-z0-9_]+|[+\-=!<>]+",
+        token_pattern=r"[A-Za-z_][A-Za-z0-9_]+|[+\-=!<>]+",  # noqa: S106 - sklearn tokenizer regex, not a credential
         min_df=3,
         sublinear_tf=True,
     )
