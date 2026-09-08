@@ -15,11 +15,39 @@ jobs:
   opengrep:
     name: Opengrep (custom rules)
     runs-on: ubuntu-latest
-    container: opengrep/opengrep:latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
+
+      # This job used to run in `container: opengrep/opengrep:latest`. No such
+      # image exists on any registry -- Docker Hub answers 404 "object not
+      # found", GHCR answers 404, and none of the upstream repo's workflows
+      # publish one -- so the job could never have started. And a `latest` tag on
+      # a job holding `security-events: write` would have let a third party
+      # choose what runs next to the token anyway. Opengrep ships release
+      # binaries, so pin one: an exact tag for provenance, plus a checksum so the
+      # tag alone cannot decide what executes. A moved or replaced asset fails
+      # `sha256sum --check` here rather than silently running something else.
+      - name: Install Opengrep
+        env:
+          OPENGREP_VERSION: v1.30.0
+          OPENGREP_SHA256: 35779bdd72e92129c8df2a77f0c55e8c08356801ea92591ef32108d6b28d564c
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.local/bin"
+          curl --fail --silent --show-error --location --retry 3 \
+            --output "$HOME/.local/bin/opengrep" \
+            "https://github.com/opengrep/opengrep/releases/download/${OPENGREP_VERSION}/opengrep_manylinux_x86"
+          echo "${OPENGREP_SHA256}  $HOME/.local/bin/opengrep" | sha256sum --check --strict -
+          chmod +x "$HOME/.local/bin/opengrep"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Assert the pinned binary is the one on PATH
+        run: |
+          set -euo pipefail
+          command -v opengrep
+          opengrep --version
 
       # Pull the rules repo. The rules repo's auto-generated PRs from
       # repo-bug-learner deploy here on merge.
