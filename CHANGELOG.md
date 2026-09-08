@@ -6,6 +6,12 @@ See [docs/CHANGELOG.md](docs/CHANGELOG.md) for full history.
 
 ### Fixed
 
+- The semgrep install no longer assumes the venv has pip. `uv sync` builds `.venv`
+  without pip, so `make test` on a checkout that had run `make install` died on
+  `make: .venv/bin/pip: No such file or directory`. It now prefers `uv pip install`,
+  falls back to the venv's own pip, and bootstraps pip via `ensurepip` only as a last
+  resort. CI never hit this because `actions/setup-python` + `python -m venv` does
+  ship pip.
 - CI `lint` job no longer installs ruff unpinned. Ruff 0.16 widened its default rule
   set, which turned every fresh CI run red on an unchanged repo and blocked Dependabot
   PRs. The rule set is now declared explicitly in `[tool.ruff.lint]`, the version is

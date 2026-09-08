@@ -92,7 +92,18 @@ $(VENV_STAMP):
 		}; \
 		$(PYTHON) -m venv .venv; \
 	fi
-	.venv/bin/pip install -q semgrep==$(SEMGREP_VERSION)
+	@# `uv sync` builds .venv WITHOUT pip, so `.venv/bin/pip` is not a thing that
+	@# reliably exists. `python -m venv` does ship pip, which is why CI never hit
+	@# this. Try uv first, fall back to the venv's own pip, and bootstrap pip only
+	@# as a last resort.
+	@if command -v uv >/dev/null 2>&1; then \
+		uv pip install -q --python .venv/bin/python semgrep==$(SEMGREP_VERSION); \
+	elif .venv/bin/python -m pip --version >/dev/null 2>&1; then \
+		.venv/bin/python -m pip install -q semgrep==$(SEMGREP_VERSION); \
+	else \
+		.venv/bin/python -m ensurepip --upgrade >/dev/null && \
+		.venv/bin/python -m pip install -q semgrep==$(SEMGREP_VERSION); \
+	fi
 	@rm -f .venv/.deps-ok-*
 	@touch $@
 
