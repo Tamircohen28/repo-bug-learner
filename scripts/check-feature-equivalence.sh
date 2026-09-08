@@ -309,7 +309,14 @@ else
     fi
 
     # platform-targets.json is the version/provenance view of the same platform set.
-    if [[ -f "$TARGETS_JSON" ]] && jq -e '.supported_targets' "$TARGETS_JSON" >/dev/null 2>&1; then
+    # This is the ONLY registry-to-targets membership comparison, so it must never be
+    # skipped for want of its input: a skipped comparison lets a surface be added to the
+    # registry with no version or provenance behind it and still go green.
+    if [[ ! -f "$TARGETS_JSON" ]]; then
+      err "platform-targets.json is missing — the registry's platform set cannot be cross-checked against the version/provenance view"
+    elif ! jq -e '.supported_targets | type == "array"' "$TARGETS_JSON" >/dev/null 2>&1; then
+      err "platform-targets.json has no supported_targets array — without it this check compares nothing and passes regardless of what the registry claims"
+    else
       tgt_ids=$(jq -r '.supported_targets[]' "$TARGETS_JSON" | sort)
       if [[ "$tgt_ids" != "$reg_ids" ]]; then
         err "platform-targets.json supported_targets disagrees with the capability registry"
