@@ -27,7 +27,7 @@ dev = [
     # Pinned exactly: ruff widens its default rule set between minor releases, so an
     # unpinned linter turns any new ruff release into a red CI run on a repo that has
     # not changed. Dependabot bumps this pin; the lint select list below pins the rules.
-    "ruff==0.16.6",
+    "ruff==0.17.0",
     "mypy>=1.13.0",
 ]
 
