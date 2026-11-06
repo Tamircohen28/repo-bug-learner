@@ -20,8 +20,11 @@ See [docs/CHANGELOG.md](docs/CHANGELOG.md) for full history.
   discovery, `.mdc` rule frontmatter or project skills. README badges and
   `platform-targets.md` (which still showed the 2.0.0 / 0.45.0 / 0.40.0 placeholders)
   follow.
-- CI's test matrix adds Python 3.14 and 3.15 (now 3.11-3.15); the `CI` aggregate
-  check the ruleset requires is unchanged.
+- CI's test matrix adds Python 3.14 (now 3.11-3.14); the `CI` aggregate check the
+  ruleset requires is unchanged. 3.15 is not in the matrix yet: on Linux, semgrep
+  1.184.0's engine segfaults under Python 3.15.2, so the precision check cannot run.
+- `scripts/precision_check.py` prints semgrep's error list and stderr when the scan
+  reports errors, instead of a silent 0% precision.
 - Workflow actions bumped to their latest releases, still SHA-pinned: checkout
   v7.0.1, setup-python v7.1.0, upload-artifact v7.0.2, github-script v9.0.0,
   setup-java v6.2.0, sbt/setup-sbt v1.5.14, coursier/cache-action v9.0.1,
