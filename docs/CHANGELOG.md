@@ -6,6 +6,14 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Every human-facing doc (README.md, docs/**) now ends with the canonical two-link
+  footer, and `make agent:check` holds it there through a vendored
+  `scripts/check-doc-standards.sh` (config: `config/docs/doc-standards.json`).
+- `make assert-contract` names the missing `TAMIRS_CONTRACT` directory and how to
+  point at one, instead of failing on a bare "No such file".
+- Cursor gets two glob-scoped rules (`010-python.mdc`, `020-rule-validator.mdc`) that
+  point at the agent guidelines; the `repo-bug-review` skill no longer tells agents to
+  `cd /path/to/repo-bug-learner` or use a placeholder org.
 - Platform targets re-reviewed on 2026-11-06 with `platform-sync`: Claude Code
   2.1.263 -> 2.1.318, Cursor 3.19.13 -> 3.29.9, Codex unvalidated -> 0.167.0. No
   breaking change in those ranges touches `CLAUDE.md` `@`-imports, `AGENTS.md`
