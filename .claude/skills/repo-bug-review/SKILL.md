@@ -13,12 +13,14 @@ The user wants to lint/review/audit code against known anti-patterns from the ru
 
 ## Step 1 — Run the review orchestrator
 
+Run from the repo root (`make install` first if `.venv/` is missing). Pass only the
+target flag you need; `<owner>/<repo>` is the GitHub repository the PR belongs to.
+
 ```bash
-cd /path/to/repo-bug-learner
 .venv/bin/python scripts/review.py \
     --file /absolute/path/to/file \
     --dir /absolute/path/to/dir \
-    --pr 12345 --repo your-org/backend \
+    --pr <number> --repo <owner>/<repo> \
     --snippet-text "..." --language python
 ```
 

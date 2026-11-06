@@ -10,3 +10,7 @@
 6. **Ship** — open PRs to your rules repository for human review
 
 Rules from the rules repo gate target repositories via CI workflows in `service-integration/`.
+
+---
+
+<p align="center"><a href="https://github.com/Tamircohen28">Have a Question?</a>&nbsp;·&nbsp;<a href="https://github.com/Tamircohen28/repo-bug-learner/issues/new/choose">Open an Issue</a></p>

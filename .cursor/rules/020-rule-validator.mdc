@@ -1,0 +1,9 @@
+---
+description: "Scalafix / Opengrep rule harness — target constraints"
+globs: rule-validator/**,rules-repo-templates/**
+alwaysApply: false
+---
+
+Scalafix rules target Scala 2.12 syntax only, and synthesized rules always go through
+human review — see "Repository expectations" in `AGENTS.md`. Validate changes with
+`make precision`.

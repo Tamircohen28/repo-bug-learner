@@ -20,7 +20,7 @@ make uninstall # remove venv + caches
 make test      # precision check + regression scan + pytest
 make lint      # ruff check src scripts
 make precision # precision_check.py (semgrep)
-make agent:check           # drift + feature equivalence + platform targets + skill bridge
+make agent:check           # drift + equivalence + platform targets + action pinning + doc standards + skill bridge
 make skill-bridge          # regenerate .claude/skills from canonical .agents/skills
 make repo-standards-gate   # agent polish + contract assert (pre-PR)
 make schema    # initialize DB schema

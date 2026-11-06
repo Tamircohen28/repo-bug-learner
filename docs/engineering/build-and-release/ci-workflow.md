@@ -8,3 +8,7 @@
 - **`.github/workflows/release.yml`** — manual version tag + GitHub Release
 
 Precision corpora require every Opengrep rule to score ≥75% on positive/negative test snippets.
+
+---
+
+<p align="center"><a href="https://github.com/Tamircohen28">Have a Question?</a>&nbsp;·&nbsp;<a href="https://github.com/Tamircohen28/repo-bug-learner/issues/new/choose">Open an Issue</a></p>

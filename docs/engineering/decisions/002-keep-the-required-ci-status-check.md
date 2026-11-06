@@ -56,3 +56,7 @@ touched:
 - Any new required check should be added as a dependency of the `CI` fan-in job
   rather than as a second required context, so the ruleset itself stays a
   one-line contract.
+
+---
+
+<p align="center"><a href="https://github.com/Tamircohen28">Have a Question?</a>&nbsp;·&nbsp;<a href="https://github.com/Tamircohen28/repo-bug-learner/issues/new/choose">Open an Issue</a></p>

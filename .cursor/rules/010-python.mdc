@@ -1,0 +1,9 @@
+---
+description: "Python pipeline and scripts — style, config and testing pointers"
+globs: src/**/*.py,scripts/**/*.py
+alwaysApply: false
+---
+
+Follow `docs/agent-guidelines/style.md` (ruff, config read from `config/config.toml`,
+never hardcoded) and `docs/agent-guidelines/testing.md` (`make test`, `make lint`).
+`AGENTS.md` stays canonical — do not restate its policy here.

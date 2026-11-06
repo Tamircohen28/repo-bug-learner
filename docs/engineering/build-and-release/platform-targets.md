@@ -17,3 +17,7 @@ numbers in its changelog, so its row is the desktop build the review ran against
 Update this file and the README platform badges whenever the targets are re-reviewed.
 Agents run `make platform-targets-sync` (refreshes `latest_known` for Claude Code and
 Codex from npm / GitHub releases) and `make platform-targets-assert` before release.
+
+---
+
+<p align="center"><a href="https://github.com/Tamircohen28">Have a Question?</a>&nbsp;·&nbsp;<a href="https://github.com/Tamircohen28/repo-bug-learner/issues/new/choose">Open an Issue</a></p>

@@ -31,3 +31,7 @@ Update both under `[Unreleased]` before each release.
 VER=$(grep '^version' pyproject.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
 git tag -l "v${VER}" | grep -q . || echo "missing tag v${VER}"
 ```
+
+---
+
+<p align="center"><a href="https://github.com/Tamircohen28">Have a Question?</a>&nbsp;·&nbsp;<a href="https://github.com/Tamircohen28/repo-bug-learner/issues/new/choose">Open an Issue</a></p>

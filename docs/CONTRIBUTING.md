@@ -7,3 +7,7 @@
 5. Open a PR using the template.
 
 Code style: `ruff` on `src/` and `scripts/`. Scalafix rules must compile in `rule-validator/`.
+
+---
+
+<p align="center"><a href="https://github.com/Tamircohen28">Have a Question?</a>&nbsp;·&nbsp;<a href="https://github.com/Tamircohen28/repo-bug-learner/issues/new/choose">Open an Issue</a></p>
