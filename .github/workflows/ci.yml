@@ -33,21 +33,24 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.11', '3.12', '3.13']
+        # 3.15 is left out: on ubuntu-latest with Python 3.15.2, semgrep 1.184.0's
+        # semgrep-core segfaults (exit -11) on every rule, even on 2-file inputs, so
+        # `make precision` reports 0%. Add 3.15 once semgrep runs there.
+        python-version: ['3.11', '3.12', '3.13', '3.14']
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ matrix.python-version }}
       # PYTHON is passed explicitly. Without it the Makefile probes PATH for
-      # python3.13, python3.12, python3.11 in that order, and ubuntu-latest ships
+      # python3.15 down to python3.11 in that order, and ubuntu-latest ships
       # /usr/bin/python3.12 -- so the 3.11 leg built a 3.12 venv and reported green
       # for a version it never ran. setup-python's `python` shim is this leg's
       # interpreter by construction.
       - run: make test PYTHON="$(command -v python)"
       # The matrix is only a real matrix if each leg actually runs its own
-      # version. `make test` picks its interpreter by probing PATH for python3.13,
-      # 3.12, 3.11 in that order, so without this the leg's verdict is decided by
+      # version. `make test` picks its interpreter by probing PATH from python3.15
+      # down to 3.11, so without this the leg's verdict is decided by
       # what the runner image ships rather than by what the leg pins.
       - name: Assert this leg ran on its own interpreter
         run: |

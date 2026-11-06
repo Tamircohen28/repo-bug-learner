@@ -80,7 +80,7 @@ def main() -> None:
         pos = TESTS / "positive" / f"{rule}{ext}"
         neg = TESTS / "negative" / f"{rule}{ext}"
         proc = subprocess.run(
-            [str(semgrep), "--config", str(yaml), "--quiet", "--json", str(pos), str(neg)],
+            [str(semgrep), "--config", str(yaml), "--json", str(pos), str(neg)],
             capture_output=True,
             text=True,
             check=False,
@@ -91,6 +91,13 @@ def main() -> None:
             print(f"  {rule}: semgrep failed:\n{proc.stderr}")
             failures.append((rule, 0.0))
             continue
+        # An empty result with errors is a scanner failure, not a precise rule:
+        # surface semgrep's own error list instead of reporting 0% silently.
+        errors = data.get("errors", [])
+        for err in errors:
+            print(f"  {rule}: semgrep error ({err.get('type')}): {str(err.get('message'))[:500]}")
+        if errors and proc.stderr.strip():
+            print(f"  {rule}: semgrep stderr (tail):\n{proc.stderr.strip()[-1500:]}")
         tp = sum(1 for r in data.get("results", []) if "positive" in r["path"])
         fp = sum(1 for r in data.get("results", []) if "negative" in r["path"])
         prec = tp / (tp + fp) if (tp + fp) else 0.0

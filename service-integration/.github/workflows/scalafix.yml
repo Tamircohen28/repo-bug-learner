@@ -13,15 +13,20 @@ jobs:
     name: Scalafix (custom Bookings rules)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0                          # required for --diff-base
 
-      - uses: olafurpg/setup-scala@32ffa16635ff8f19cc21ea253a987f0fdf29844c # v14
+      # olafurpg/setup-scala (Jabba, adopt@1.11) has been unmaintained since 2023;
+      # use the same setup-java + setup-sbt pair as scalafix-full-scan.yml.
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
-          java-version: 'adopt@1.11'
+          distribution: temurin
+          java-version: '17'
 
-      - uses: coursier/cache-action@4e2615869d13561d626ed48655e1a39e5b192b3c # v6.4.9
+      - uses: sbt/setup-sbt@67d461eba2c4753196c230e02da850757ba4775e # v1.5.14
+
+      - uses: coursier/cache-action@ee0650f98295f27a505e4bfd284c9bfaa913a465 # v9.0.1
 
       # Run Scalafix only on lines changed in this PR. New violations fail the build.
       # Pre-existing violations are reported but don't block.

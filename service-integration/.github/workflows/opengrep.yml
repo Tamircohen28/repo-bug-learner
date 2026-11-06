@@ -16,10 +16,10 @@ jobs:
     name: Opengrep (custom rules)
     runs-on: ubuntu-latest
     env:
-      OPENGREP_VERSION: v1.30.0
-      OPENGREP_SHA256: 35779bdd72e92129c8df2a77f0c55e8c08356801ea92591ef32108d6b28d564c
+      OPENGREP_VERSION: v1.33.1
+      OPENGREP_SHA256: 46e8133cc490f9f50518061590ce2f6be5a08afaeda034471c0ceda4b3899808
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
@@ -61,7 +61,7 @@ jobs:
       # Pull the rules repo. The rules repo's auto-generated PRs from
       # repo-bug-learner deploy here on merge.
       - name: Checkout rules repo
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ${{ vars.RULES_REPO }}
           path: analysis-rules
@@ -80,7 +80,7 @@ jobs:
 
       # Upload findings to GitHub Code Scanning (Security tab + PR review surface)
       - name: Upload SARIF
-        uses: github/codeql-action/upload-sarif@6f5948dfacef28e207b48d0905cf90c03365536d # v3.37.9
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         if: always()
         with:
           sarif_file: opengrep.sarif
