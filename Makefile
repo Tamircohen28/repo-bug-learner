@@ -17,13 +17,13 @@ RUFF_VERSION := $(shell sed -n 's/.*"ruff==\([0-9][0-9.]*\)".*/\1/p' pyproject.t
 # so `python -m venv` silently built a venv below the floor while CI stayed green,
 # because setup-python pins 3.12 there. Pick the first interpreter that actually
 # clears the floor. Override on the command line: `make test PYTHON=/path/to/python`.
-PYTHON := $(shell for p in python3.13 python3.12 python3.11 python3 python; do \
+PYTHON := $(shell for p in python3.15 python3.14 python3.13 python3.12 python3.11 python3 python; do \
 	command -v $$p >/dev/null 2>&1 \
 	  && $$p -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' 2>/dev/null \
 	  && { echo $$p; break; }; \
 	done)
 
-SEMGREP_VERSION := 1.163.0
+SEMGREP_VERSION := 1.184.0
 
 help:
 	@echo "install update uninstall test lint lint-fix agent:check agent-polish-gate repo-standards-gate"
