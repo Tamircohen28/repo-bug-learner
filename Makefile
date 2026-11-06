@@ -1,7 +1,7 @@
 .PHONY: help install update uninstall test lint lint-fix clean schema precision \
 	agent\:check agent-polish-gate repo-standards-gate assert-contract \
 	check-agent-drift check-feature-equivalence check-platform-targets \
-	check-action-pinning \
+	check-action-pinning check-doc-standards \
 	skill-bridge skill-bridge-check \
 	platform-targets-sync platform-targets-assert
 
@@ -39,7 +39,7 @@ uninstall:
 	$(MAKE) clean
 
 agent\:check: check-agent-drift check-feature-equivalence check-platform-targets \
-	check-action-pinning skill-bridge-check
+	check-action-pinning check-doc-standards skill-bridge-check
 
 check-agent-drift:
 	bash scripts/check-agent-drift.sh .
@@ -58,6 +58,11 @@ check-platform-targets:
 check-action-pinning:
 	bash scripts/check-action-pinning.sh . --self-test
 
+# Every human-facing doc ends with the canonical footer and every Mermaid block
+# opens with the shared init line. Config: config/docs/doc-standards.json.
+check-doc-standards:
+	bash scripts/check-doc-standards.sh .
+
 skill-bridge:
 	bash scripts/sync-skill-bridge.sh .
 
@@ -72,7 +77,13 @@ platform-targets-assert:
 
 agent-polish-gate: platform-targets-sync platform-targets-assert agent\:check
 
+# The contract lives in the tamirs-superpowers checkout, outside this repo. Say so
+# plainly when it is missing instead of failing on a bash "No such file".
 assert-contract:
+	@[ -f "$(TAMIRS_CONTRACT)/scripts/assert-contract.sh" ] || { \
+		echo "assert-contract: no contract at $(TAMIRS_CONTRACT)."; \
+		echo "Clone tamirs-superpowers or point at it: make $@ TAMIRS_CONTRACT=/path/to/skills/repo/_contract"; \
+		exit 1; }
 	@bash "$(TAMIRS_CONTRACT)/scripts/assert-contract.sh" . app-gold
 
 repo-standards-gate: agent-polish-gate assert-contract

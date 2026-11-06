@@ -19,3 +19,7 @@ Run `docker compose up -d` and confirm `postgres.database = rbl` in config match
 ## Semgrep precision check fails in CI
 
 Add or fix positive/negative snippets under `rule-validator/rules/tests/`.
+
+---
+
+<p align="center"><a href="https://github.com/Tamircohen28">Have a Question?</a>&nbsp;·&nbsp;<a href="https://github.com/Tamircohen28/repo-bug-learner/issues/new/choose">Open an Issue</a></p>
