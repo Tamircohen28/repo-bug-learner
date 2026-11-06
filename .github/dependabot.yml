@@ -4,7 +4,11 @@ updates:
     directory: /
     schedule:
       interval: weekly
+  # service-integration/ holds workflow templates that service repos copy. They pin
+  # actions by SHA too, so they need the same bump traffic as this repo's own CI.
   - package-ecosystem: github-actions
-    directory: /
+    directories:
+      - /
+      - /service-integration
     schedule:
       interval: weekly

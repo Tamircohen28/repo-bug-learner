@@ -10,9 +10,9 @@
 </p>
 
 <p align="center">
-  <a href="docs/engineering/build-and-release/platform-targets.json"><img src="https://img.shields.io/badge/Claude%20Code-2.1.263-blueviolet" alt="Claude Code" /></a>
-  <a href="docs/engineering/build-and-release/platform-targets.json"><img src="https://img.shields.io/badge/Cursor-3.19.13-000000" alt="Cursor" /></a>
-  <a href="docs/engineering/build-and-release/platform-targets.json"><img src="https://img.shields.io/badge/Codex-not%20validated-lightgrey" alt="Codex" /></a>
+  <a href="docs/engineering/build-and-release/platform-targets.json"><img src="https://img.shields.io/badge/Claude%20Code-2.1.318-blueviolet" alt="Claude Code" /></a>
+  <a href="docs/engineering/build-and-release/platform-targets.json"><img src="https://img.shields.io/badge/Cursor-3.29.9-000000" alt="Cursor" /></a>
+  <a href="docs/engineering/build-and-release/platform-targets.json"><img src="https://img.shields.io/badge/Codex-0.167.0-10a37f" alt="Codex" /></a>
 </p>
 
 # repo-bug-learner

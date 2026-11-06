@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Platform targets re-reviewed on 2026-11-06 with `platform-sync`: Claude Code
+  2.1.263 -> 2.1.318, Cursor 3.19.13 -> 3.29.9, Codex unvalidated -> 0.167.0. No
+  breaking change in those ranges touches `CLAUDE.md` `@`-imports, `AGENTS.md`
+  discovery, `.mdc` rule frontmatter or project skills. README badges and
+  `platform-targets.md` (which still showed the 2.0.0 / 0.45.0 / 0.40.0 placeholders)
+  follow.
+- `SEMGREP_VERSION` 1.163.0 -> 1.184.0. `make test` passes on Python 3.14.7 and
+  3.15.2 with the new pin, and the Makefile's interpreter probe now tries
+  `python3.15` and `python3.14` before `python3.13`.
+- Dependabot now watches `service-integration/` workflow templates as well as this
+  repo's own CI, so the action pins that service repos copy stop drifting.
+
 ### Removed
 
 - `.github/workflows/regression-tests.yml`. After it was changed to call `make test`,
