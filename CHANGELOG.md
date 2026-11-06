@@ -20,6 +20,17 @@ See [docs/CHANGELOG.md](docs/CHANGELOG.md) for full history.
   discovery, `.mdc` rule frontmatter or project skills. README badges and
   `platform-targets.md` (which still showed the 2.0.0 / 0.45.0 / 0.40.0 placeholders)
   follow.
+- CI's test matrix adds Python 3.14 and 3.15 (now 3.11-3.15); the `CI` aggregate
+  check the ruleset requires is unchanged.
+- Workflow actions bumped to their latest releases, still SHA-pinned: checkout
+  v7.0.1, setup-python v7.1.0, upload-artifact v7.0.2, github-script v9.0.0,
+  setup-java v6.2.0, sbt/setup-sbt v1.5.14, coursier/cache-action v9.0.1,
+  codeql-action/upload-sarif v4.39.3, sticky-pull-request-comment v3.0.5,
+  action-gh-release v3.0.4. The service-integration opengrep workflow moves to
+  opengrep v1.33.1 and Python 3.14, with semgrep 1.184.0.
+- `scalafix.yml` and `scapegoat.yml` drop the unmaintained `olafurpg/setup-scala`
+  (Jabba, `adopt@1.11`) for the same `setup-java` (Temurin 17) + `setup-sbt` pair
+  the other Scala workflows use.
 - `SEMGREP_VERSION` 1.163.0 -> 1.184.0. `make test` passes on Python 3.14.7 and
   3.15.2 with the new pin, and the Makefile's interpreter probe now tries
   `python3.15` and `python3.14` before `python3.13`.
