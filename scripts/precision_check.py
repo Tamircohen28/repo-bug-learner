@@ -91,6 +91,10 @@ def main() -> None:
             print(f"  {rule}: semgrep failed:\n{proc.stderr}")
             failures.append((rule, 0.0))
             continue
+        # An empty result with errors is a scanner failure, not a precise rule:
+        # surface semgrep's own error list instead of reporting 0% silently.
+        for err in data.get("errors", []):
+            print(f"  {rule}: semgrep error ({err.get('type')}): {str(err.get('message'))[:500]}")
         tp = sum(1 for r in data.get("results", []) if "positive" in r["path"])
         fp = sum(1 for r in data.get("results", []) if "negative" in r["path"])
         prec = tp / (tp + fp) if (tp + fp) else 0.0
